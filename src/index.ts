@@ -1,11 +1,15 @@
+import { existsSync } from 'node:fs';
 import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { HttpOllamaClient } from './core/ollama.js';
 import { OllamaSupervisor, preloadModel } from './core/supervisor.js';
 import { createLogger } from './util/logger.js';
 
+// Bun loads .env itself; under Node we do it here. Existing environment values win.
+if (typeof process.loadEnvFile === 'function' && existsSync('.env')) process.loadEnvFile('.env');
+
 const config = loadConfig();
-const log = createLogger(config.LOG_LEVEL);
+const log = createLogger(config.LOG_LEVEL, config.LOG_FORMAT);
 const client = new HttpOllamaClient(config.OLLAMA_BASE_URL, config.UPSTREAM_TIMEOUT_MS);
 const supervisor = config.OLLAMA_MANAGED ? new OllamaSupervisor(config, client, log) : undefined;
 
@@ -43,7 +47,8 @@ async function main(): Promise<void> {
   process.once('SIGTERM', () => shutdown('SIGTERM'));
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   log.fatal({ err }, 'startup failed');
+  await supervisor?.stop();
   process.exit(1);
 });

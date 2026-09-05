@@ -16,6 +16,8 @@ function buildEnv(runtimeEnv: Record<string, string | undefined>) {
       PORT: int(8000),
       API_KEY: optionalStr,
       LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+      /** pretty = coloured human-readable; json = one JSON line per event; auto = pretty on a TTY. */
+      LOG_FORMAT: z.enum(['pretty', 'json', 'auto']).default('auto'),
 
       OLLAMA_MANAGED: bool(true),
       OLLAMA_BIN: str('ollama'),

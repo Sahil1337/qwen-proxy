@@ -58,35 +58,36 @@ The proxy sends `num_gpu`, `num_ctx` and the KV cache type on **every** request,
 
 All settings are environment variables, validated at startup with [t3-env](https://env.t3.gg). `.env` in the working directory is loaded automatically.
 
-| Variable                  | Default                  | Meaning                                                                                              |
-| ------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `PORT`                    | `8000`                   | Proxy port.                                                                                          |
-| `API_KEY`                 | unset                    | When set, `/v1/*` requires `Authorization: Bearer <key>`. `/health` stays open.                      |
-| `LOG_LEVEL`               | `info`                   | pino level. Pipe through `bunx pino-pretty` for humans.                                              |
-| `OLLAMA_MANAGED`          | `true`                   | Spawn and supervise `ollama serve`. `false` = attach to an existing server.                          |
-| `OLLAMA_BIN`              | `ollama`                 | Binary to spawn.                                                                                     |
-| `OLLAMA_BASE_URL`         | `http://127.0.0.1:11434` | Where Ollama listens.                                                                                |
-| `OLLAMA_MODELS`           | unset                    | Model directory for the child process.                                                               |
-| `OLLAMA_START_TIMEOUT_MS` | `30000`                  | How long to wait for the child to answer.                                                            |
-| `OLLAMA_PRELOAD`          | `true`                   | Load the model into VRAM at startup.                                                                 |
-| `MODEL`                   | `qwen3.5:4b`             | The single served model.                                                                             |
-| `NUM_CTX`                 | `8192`                   | Context window; sent on every request.                                                               |
-| `NUM_GPU`                 | `34`                     | Layers on the GPU. `-1` = Ollama auto-fit.                                                           |
-| `KV_CACHE_TYPE`           | `q8_0`                   | KV cache quantization for the child.                                                                 |
-| `FLASH_ATTENTION`         | `true`                   | Flash attention for the child.                                                                       |
-| `KEEP_ALIVE`              | `30m`                    | How long Ollama keeps the model loaded.                                                              |
-| `MAX_PARALLEL`            | `2`                      | Proxy concurrency; must match Ollama's parallelism.                                                  |
-| `DEFAULT_MODE`            | `adaptive`               | `thinking`, `fast` or `adaptive` when the caller sends no `mode`.                                    |
-| `THINK_BUDGET_TOKENS`     | `1024`                   | Thinking budget per request.                                                                         |
-| `DEFAULT_MAX_TOKENS`      | `2048`                   | Answer budget when the caller sends no `max_tokens`.                                                 |
-| `ADAPTIVE_SHORT_TOKENS`   | `60`                     | Router rule 5 threshold (chars / 4).                                                                 |
-| `ADAPTIVE_TOOLS_THINK`    | `true`                   | Router rule 3: tools imply thinking.                                                                 |
-| `CLASSIFIER_TIMEOUT_MS`   | `3000`                   | Router rule 6 timeout; timeout means fast.                                                           |
-| `TOOL_INJECTION`          | `native`                 | `native` passes tools to Ollama's template; `prompt` injects a Hermes tools block and always parses. |
-| `TOOL_SCHEMA_SLIM`        | `true`                   | Strip validation-only keywords from tool schemas before the model sees them.                         |
-| `QUEUE_TIMEOUT_MS`        | `120000`                 | Max wait for a slot before 503.                                                                      |
-| `UPSTREAM_TIMEOUT_MS`     | `600000`                 | Per-call Ollama timeout.                                                                             |
-| `MAX_PROMPT_TOKENS`       | `7000`                   | Estimated prompt tokens above this are rejected with 400.                                            |
+| Variable                  | Default                  | Meaning                                                                                                                                           |
+| ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                    | `8000`                   | Proxy port.                                                                                                                                       |
+| `API_KEY`                 | unset                    | When set, `/v1/*` requires `Authorization: Bearer <key>`. `/health` stays open.                                                                   |
+| `LOG_LEVEL`               | `info`                   | `debug` adds a `model.io` event per request with the prompt, the model's full reasoning, tool calls and answer. `trace` adds Ollama's own output. |
+| `LOG_FORMAT`              | `auto`                   | `pretty` (coloured, human-readable), `json` (one line per event), or `auto` (pretty on a terminal, json otherwise).                               |
+| `OLLAMA_MANAGED`          | `true`                   | Spawn and supervise `ollama serve`. `false` = attach to an existing server.                                                                       |
+| `OLLAMA_BIN`              | `ollama`                 | Binary to spawn.                                                                                                                                  |
+| `OLLAMA_BASE_URL`         | `http://127.0.0.1:11434` | Where Ollama listens.                                                                                                                             |
+| `OLLAMA_MODELS`           | unset                    | Model directory for the child process.                                                                                                            |
+| `OLLAMA_START_TIMEOUT_MS` | `30000`                  | How long to wait for the child to answer.                                                                                                         |
+| `OLLAMA_PRELOAD`          | `true`                   | Load the model into VRAM at startup.                                                                                                              |
+| `MODEL`                   | `qwen3.5:4b`             | The single served model.                                                                                                                          |
+| `NUM_CTX`                 | `8192`                   | Context window; sent on every request.                                                                                                            |
+| `NUM_GPU`                 | `34`                     | Layers on the GPU. `-1` = Ollama auto-fit.                                                                                                        |
+| `KV_CACHE_TYPE`           | `q8_0`                   | KV cache quantization for the child.                                                                                                              |
+| `FLASH_ATTENTION`         | `true`                   | Flash attention for the child.                                                                                                                    |
+| `KEEP_ALIVE`              | `30m`                    | How long Ollama keeps the model loaded.                                                                                                           |
+| `MAX_PARALLEL`            | `2`                      | Proxy concurrency; must match Ollama's parallelism.                                                                                               |
+| `DEFAULT_MODE`            | `adaptive`               | `thinking`, `fast` or `adaptive` when the caller sends no `mode`.                                                                                 |
+| `THINK_BUDGET_TOKENS`     | `1024`                   | Thinking budget per request.                                                                                                                      |
+| `DEFAULT_MAX_TOKENS`      | `2048`                   | Answer budget when the caller sends no `max_tokens`.                                                                                              |
+| `ADAPTIVE_SHORT_TOKENS`   | `60`                     | Router rule 5 threshold (chars / 4).                                                                                                              |
+| `ADAPTIVE_TOOLS_THINK`    | `true`                   | Router rule 3: tools imply thinking.                                                                                                              |
+| `CLASSIFIER_TIMEOUT_MS`   | `3000`                   | Router rule 6 timeout; timeout means fast.                                                                                                        |
+| `TOOL_INJECTION`          | `native`                 | `native` passes tools to Ollama's template; `prompt` injects a Hermes tools block and always parses.                                              |
+| `TOOL_SCHEMA_SLIM`        | `true`                   | Strip validation-only keywords from tool schemas before the model sees them.                                                                      |
+| `QUEUE_TIMEOUT_MS`        | `120000`                 | Max wait for a slot before 503.                                                                                                                   |
+| `UPSTREAM_TIMEOUT_MS`     | `600000`                 | Per-call Ollama timeout.                                                                                                                          |
+| `MAX_PROMPT_TOKENS`       | `7000`                   | Estimated prompt tokens above this are rejected with 400.                                                                                         |
 
 ## Endpoints
 
@@ -122,7 +123,7 @@ OpenAI SDK ──► POST /v1/chat/completions
                ▼
             turn    ──► POST /api/chat on Ollama
                         thinking: budget = THINK_BUDGET_TOKENS + max_tokens
-                        no answer after budget? -> continuation call with forced </think>
+                        cut off by the budget (no or partial answer)? -> continuation call with forced </think>
                │
                ▼
             validate ──► tool args (ajv) / structured output (ajv)
@@ -134,11 +135,11 @@ OpenAI SDK ──► POST /v1/chat/completions
 
 ### Thinking modes
 
-| Mode       | Upstream            | Behaviour                                                                                                                                                                                                                                                            |
-| ---------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fast`     | `think:false`       | Any `<think>` that leaks into content is stripped.                                                                                                                                                                                                                   |
-| `thinking` | `think:true`        | `num_predict = THINK_BUDGET_TOKENS + max_tokens`. Reasoning returns in `choices[0].message.reasoning_content`. A budget overrun triggers a second call that continues from the truncated thinking with a forced `</think>`, and sets `meetiq.think_budget_hit=true`. |
-| `adaptive` | decided per request | See the router below.                                                                                                                                                                                                                                                |
+| Mode       | Upstream            | Behaviour                                                                                                                                                                                                                                                                                                                                   |
+| ---------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fast`     | `think:false`       | Any `<think>` that leaks into content is stripped.                                                                                                                                                                                                                                                                                          |
+| `thinking` | `think:true`        | `num_predict = THINK_BUDGET_TOKENS + max_tokens`. Reasoning returns in `choices[0].message.reasoning_content`. A budget overrun (no answer, or a partial one cut off on length) triggers a second call that continues from the truncated thinking and any partial answer with a forced `</think>`, and sets `meetiq.think_budget_hit=true`. |
+| `adaptive` | decided per request | See the router below.                                                                                                                                                                                                                                                                                                                       |
 
 ### Adaptive router
 
@@ -168,7 +169,24 @@ Rules are evaluated in order; the first match wins (`meetiq.router.rule` / `x-me
 
 ### Streaming
 
-`stream:true` returns SSE in OpenAI chunk format. **Limitation:** when `tools` or `response_format` are present, the proxy must see the whole output before validating it, so the response is buffered and delivered as one chunk followed by the finish chunk.
+Send `stream: true` and read server-sent events, exactly as with OpenAI. The stream ends with `data: [DONE]`.
+
+- Thinking tokens arrive as `delta.reasoning_content`, answer tokens as `delta.content`, in that order.
+- The first chunk carries `delta.role`; the last carries `finish_reason`, `usage` and `meetiq`.
+- If the thinking budget runs out, the continuation call streams into the same response: you see reasoning stop and the answer begin.
+
+With the OpenAI SDK:
+
+```ts
+const stream = await client.chat.completions.create({ model: 'qwen3.5:4b', messages, stream: true });
+for await (const chunk of stream) {
+  const delta = chunk.choices[0]?.delta as { content?: string; reasoning_content?: string };
+  if (delta.reasoning_content) process.stderr.write(delta.reasoning_content); // thinking
+  if (delta.content) process.stdout.write(delta.content); // answer
+}
+```
+
+**Limitation:** when `tools` or `response_format` are present the proxy must see the whole output before it can validate it, so the response is buffered and delivered as one content/tool_calls chunk followed by the finish chunk. It is still a valid SSE stream, just not token by token. Plain chat streams token by token.
 
 ### Concurrency and limits
 
@@ -305,6 +323,7 @@ Bind Ollama to `127.0.0.1` (the default `OLLAMA_BASE_URL` does this) and expose 
 
 ```bash
 bun run dev           # bun --watch
+bun run try           # playground against the running proxy: edit PROMPTS/TOOLS in test.ts
 bun test              # fully offline (Ollama is faked)
 bun run typecheck     # src + test
 bun run format        # prettier --write

@@ -83,3 +83,37 @@ describe('runTurn thinking budget', () => {
     expect(fake.requests[0]?.think).toBe(false);
   });
 });
+
+describe('runTurn thinking budget with a truncated answer', () => {
+  const config = testConfig({ THINK_BUDGET_TOKENS: '100' });
+
+  it('continues a partial answer that was cut off by the budget', async () => {
+    const fake = new FakeOllama().reply(
+      { thinking: 'long thoughts', content: 'The answer is', done_reason: 'length', eval_count: 150 },
+      { content: ' forty-two.', eval_count: 4 },
+    );
+    const result = await runTurn(fake, config, {
+      messages: [{ role: 'user', content: 'What is the answer?' }],
+      mode: 'thinking',
+      maxTokens: 50,
+      options: {},
+    });
+    expect(result.budgetHit).toBe(true);
+    expect(result.content).toBe('The answer is forty-two.');
+    const prefix = fake.requests[1]?.messages.at(-1);
+    expect(prefix?.content).toBe('<think>\nlong thoughts\n</think>The answer is');
+    expect(fake.requests[1]?.think).toBe(false);
+  });
+
+  it('does not continue when the answer itself used the whole max_tokens', async () => {
+    const fake = new FakeOllama().reply({ thinking: 'brief', content: 'x'.repeat(400), done_reason: 'length' });
+    const result = await runTurn(fake, config, {
+      messages: [{ role: 'user', content: 'x' }],
+      mode: 'thinking',
+      maxTokens: 50,
+      options: {},
+    });
+    expect(result.budgetHit).toBe(false);
+    expect(fake.requests).toHaveLength(1);
+  });
+});

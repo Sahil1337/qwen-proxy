@@ -85,7 +85,7 @@ export class OllamaSupervisor {
     const forward = (stream: NodeJS.ReadableStream | null) => {
       stream?.on('data', (buf: Buffer) => {
         for (const line of buf.toString().split('\n')) {
-          if (line.trim()) this.log.debug({ ollama: line }, 'ollama');
+          if (line.trim()) this.log.trace({ ollama: line }, 'ollama');
         }
       });
     };

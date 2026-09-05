@@ -6,6 +6,7 @@ import {
   buildChunk,
   buildCompletion,
   estimatePromptTokens,
+  lastUserText,
   parseChatRequest,
   type ChatRequest,
   type ChunkDelta,
@@ -80,6 +81,18 @@ export function chatRouter(ctx: AppContext): Router {
           },
           'chat.completion',
         );
+        if (log.isLevelEnabled('debug')) {
+          log.debug(
+            {
+              request_id: req.id,
+              prompt: lastUserText(body.messages),
+              reasoning: result.reasoning,
+              tool_calls: result.toolCalls,
+              content: result.content,
+            },
+            'model.io',
+          );
+        }
       } catch (err) {
         const proxyError = toProxyError(err);
         log.warn(

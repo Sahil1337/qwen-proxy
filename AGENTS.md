@@ -62,7 +62,10 @@ test/                 vitest; Ollama is always faked, never contacted
   the error middleware. Never `res.status(...).json(...)` an error by hand.
 - Proxy-specific response fields live under `meetiq` and the `x-meetiq-*`
   headers. Do not add non-OpenAI fields anywhere else.
-- Log one pino JSON line per request from the chat route; do not scatter
+- Log one pino event per request from the chat route (`chat.completion` at
+  info, `model.io` at debug with prompt/reasoning/tool calls/answer). The
+  pretty renderer in `util/logger.ts` is for humans; JSON is the contract.
+  Do not scatter
   `log.info` through the pipeline. `debug` is fine anywhere.
 - Prefer small pure functions with tests over classes with state. Long-lived
   state lives only in the queue, the Ollama client and the supervisor; the

@@ -1,4 +1,5 @@
 import type { Config } from '../config.js';
+import { estimateTokens } from '../util/tokens.js';
 import type {
   OllamaChatChunk,
   OllamaChatRequest,
@@ -152,13 +153,18 @@ export async function runTurn(
 ): Promise<TurnResult> {
   const stream = Boolean(onDelta);
   const first = await callOnce(client, turnRequest(config, input, stream), signal, onDelta);
-  const answered = first.content.trim().length > 0 || first.nativeToolCalls.length > 0;
-  if (input.mode !== 'thinking' || answered || first.thinking.trim().length === 0) return first;
+  if (input.mode !== 'thinking' || first.thinking.trim().length === 0 || first.nativeToolCalls.length > 0) return first;
 
-  // Budget spent entirely on thinking: continue from it with a forced close, no further thinking.
+  // The budget covers thinking + answer. If generation stopped on length with no answer, or with an
+  // answer far shorter than the caller asked for, the model spent the budget thinking: continue from
+  // the truncated thinking (and any partial answer) with thinking disabled.
+  const partial = first.content.trimEnd();
+  const cutOff = first.doneReason === 'length' && estimateTokens(partial) < input.maxTokens;
+  if (partial.length > 0 && !cutOff) return first;
+
   const prefix: OllamaMessage = {
     role: 'assistant',
-    content: `${OPEN}\n${first.thinking.trimEnd()}\n${CLOSE}${FORCED_CLOSE}`,
+    content: `${OPEN}\n${first.thinking.trimEnd()}\n${CLOSE}${partial ? partial : FORCED_CLOSE}`,
   };
   const continuation = turnRequest(config, { ...input, mode: 'fast', messages: [...input.messages, prefix] }, stream);
   const second = await callOnce(
@@ -169,6 +175,7 @@ export async function runTurn(
   );
   return {
     ...second,
+    content: partial + second.content,
     thinking: first.thinking,
     budgetHit: true,
     promptTokens: first.promptTokens + second.promptTokens,

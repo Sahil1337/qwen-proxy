@@ -2,7 +2,6 @@
   "name": "qwen-proxy",
   "version": "0.1.0",
   "description": "Minimal OpenAI-compatible proxy over Ollama for Qwen3.5: adaptive thinking, robust tool calls, validated structured output",
-  "main": "dist/index.js",
   "scripts": {
     "test": "vitest run",
     "dev": "bun --watch src/index.ts",
@@ -12,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "try": "bun test.ts"
   },
   "keywords": [],
   "author": "",
