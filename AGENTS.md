@@ -49,7 +49,6 @@ src/
     queue.ts          bounded concurrency with a wait timeout
     errors.ts         ProxyError -> OpenAI error envelope
   util/               tokens (chars/4 estimate), ids, logger
-test/                 vitest; Ollama is always faked, never contacted
 ```
 
 ## Conventions
@@ -57,7 +56,7 @@ test/                 vitest; Ollama is always faked, never contacted
 - TypeScript strict, ESM, [Bun](https://bun.sh) 1.1+. Relative imports end in `.js`.
 - Under ten runtime dependencies. Add one only if it replaces >100 lines.
 - Routes do HTTP only: parse, call `core/`, write. Logic lives in `core/`.
-- Every upstream call goes through `OllamaClient` so tests can inject a fake.
+- Every upstream call goes through `OllamaClient` so the upstream can be swapped or faked.
 - Errors are thrown as `ProxyError(status, code, message)` and rendered by
   the error middleware. Never `res.status(...).json(...)` an error by hand.
 - Proxy-specific response fields live under `meetiq` and the `x-meetiq-*`
@@ -67,27 +66,26 @@ test/                 vitest; Ollama is always faked, never contacted
   pretty renderer in `util/logger.ts` is for humans; JSON is the contract.
   Do not scatter
   `log.info` through the pipeline. `debug` is fine anywhere.
-- Prefer small pure functions with tests over classes with state. Long-lived
+- Prefer small pure functions over classes with state. Long-lived
   state lives only in the queue, the Ollama client and the supervisor; the
   per-request classes (`ThinkSplitter`, `SseWriter`) hold no state beyond one
   request.
 
-## Testing
+## Checking changes
 
 ```
-bun test          # vitest, fully offline
-bun run typecheck # src and test
+bun run typecheck # strict TypeScript
+bun run try       # test.ts playground against a running proxy (bun run dev)
 ```
 
-Every parser edge case, every router rule, and every mapping rule has a unit
-test. Behavioural changes to the pipeline get an end-to-end test in
-`test/chat.e2e.test.ts` using the `FakeOllama` client. Do not add tests that
-need a running Ollama.
+There is no unit-test suite. Verify behaviour with `bun run try` and
+`POST /v1/inspect` (exact upstream payload) or `debug: true` on a request.
 
 ## Changing behaviour safely
 
 - The `<tool_call>` parser targets exactly the Hermes format Qwen is trained
-  on. Do not "generalise" it to other formats without a test per format.
+  on. Do not "generalise" it to other formats without checking real model
+  output for each.
 - `NUM_GPU`, `NUM_CTX` and the KV cache type must be identical in every
   request, including the router's classifier call, or Ollama reloads the
   model. Set them in one place (`mapping.ts: baseOptions`).

@@ -16,9 +16,6 @@ export function createLogger(level: string, format: LogFormat = 'auto'): Logger 
   return pretty ? pino({ level, base }, prettyDestination()) : pino({ level, base });
 }
 
-/** A logger that discards everything; used in tests. */
-export const silentLogger: Logger = pino({ level: 'silent' });
-
 // ---------------------------------------------------------------------------
 // Pretty formatter (no dependency; ~1 screen of code)
 // ---------------------------------------------------------------------------

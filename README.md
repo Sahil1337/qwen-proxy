@@ -324,8 +324,7 @@ Bind Ollama to `127.0.0.1` (the default `OLLAMA_BASE_URL` does this) and expose 
 ```bash
 bun run dev           # bun --watch
 bun run try           # playground against the running proxy: edit PROMPTS/TOOLS in test.ts
-bun test              # fully offline (Ollama is faked)
-bun run typecheck     # src + test
+bun run typecheck     # strict TypeScript
 bun run format        # prettier --write
 ```
 
