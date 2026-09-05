@@ -215,6 +215,8 @@ Always the OpenAI envelope:
 
 ## Examples
 
+Runnable versions of everything below live in [`examples/`](examples/README.md).
+
 ```bash
 curl -s localhost:8000/v1/chat/completions -H 'content-type: application/json' -d '{
   "messages": [{"role":"user","content":"Why did the team decide to postpone the launch?"}]
@@ -323,7 +325,7 @@ Bind Ollama to `127.0.0.1` (the default `OLLAMA_BASE_URL` does this) and expose 
 
 ```bash
 bun run dev           # bun --watch
-bun run try           # playground against the running proxy: edit PROMPTS/TOOLS in test.ts
+bun examples/04-tool-call-round-trip.ts   # runnable use cases, see examples/README.md
 bun run typecheck     # strict TypeScript
 bun run format        # prettier --write
 ```

@@ -49,6 +49,7 @@ src/
     queue.ts          bounded concurrency with a wait timeout
     errors.ts         ProxyError -> OpenAI error envelope
   util/               tokens (chars/4 estimate), ids, logger
+examples/             one runnable script per use case; see examples/README.md
 ```
 
 ## Conventions
@@ -74,12 +75,14 @@ src/
 ## Checking changes
 
 ```
-bun run typecheck # strict TypeScript
-bun run try       # test.ts playground against a running proxy (bun run dev)
+bun run typecheck                 # strict TypeScript
+bun examples/<name>.ts            # against a running proxy (bun run dev)
 ```
 
-There is no unit-test suite. Verify behaviour with `bun run try` and
-`POST /v1/inspect` (exact upstream payload) or `debug: true` on a request.
+There is no unit-test suite. Verify behaviour with the scripts in
+`examples/` (one per use case), `POST /v1/inspect` (exact upstream payload)
+or `debug: true` on a request. `test.ts` in the repo root is gitignored for
+personal experiments.
 
 ## Changing behaviour safely
 

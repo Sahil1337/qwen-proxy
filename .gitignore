@@ -3,3 +3,6 @@ dist/
 .env
 *.log
 coverage/
+
+# personal playground
+test.ts
