@@ -32,5 +32,8 @@
     "@types/node": "^20.19.43",
     "prettier": "^3.9.6",
     "typescript": "^7.0.2"
+  },
+  "exports": {
+    "./client": "./client/index.ts"
   }
 }

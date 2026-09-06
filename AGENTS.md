@@ -49,6 +49,7 @@ src/
     queue.ts          bounded concurrency with a wait timeout
     errors.ts         ProxyError -> OpenAI error envelope
   util/               tokens (chars/4 estimate), ids, logger
+client/index.ts       importable, dependency-free client for other services (never imports src/)
 examples/             one runnable script per use case; see examples/README.md
 ```
 

@@ -213,6 +213,30 @@ Always the OpenAI envelope:
 | 503    | `upstream_unavailable`, `queue_timeout`                            | Ollama unreachable; queue wait exceeded.                       |
 | 504    | `upstream_timeout`                                                 | Ollama exceeded `UPSTREAM_TIMEOUT_MS`.                         |
 
+## Client
+
+[`client/index.ts`](client/index.ts) is a single dependency-free file to import from another service. It never imports the server code, so you can copy it or reference it as `qwen-proxy/client`.
+
+```ts
+import { QwenProxyClient } from 'qwen-proxy/client';
+
+const qwen = new QwenProxyClient({ baseUrl: 'https://ai.example.com', apiKey: process.env.QWEN_API_KEY });
+
+// Schema-validated JSON: `value` matches the schema or the call throws.
+const { value } = await qwen.extract<{ decisions: string[] }>(messages, schema);
+
+// Tool loop: your handlers run, results go back, until the model answers.
+const { completion } = await qwen.runTools(messages, tools, { search_memory: async ({ query }) => db.search(query) });
+
+// Plain and streaming chat, router dry-run, health.
+await qwen.chat({ messages, mode: 'thinking' });
+for await (const chunk of qwen.stream({ messages })) process.stdout.write(chunk.choices[0]?.delta.content ?? '');
+await qwen.route({ messages });
+await qwen.health();
+```
+
+Errors are thrown as `QwenProxyError` with `status`, `code` (the proxy's error code such as `tool_call_invalid` or `queue_timeout`), `details`, and `retryAfterSeconds` when the proxy sent `Retry-After`. See [`examples/08-client.ts`](examples/08-client.ts).
+
 ## Examples
 
 Runnable versions of everything below live in [`examples/`](examples/README.md).
