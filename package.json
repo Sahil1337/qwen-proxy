@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bun --watch src/server/index.ts",
     "start": "bun src/server/index.ts",
-    "serve": "kde-inhibit --power bun src/server/index.ts",
+    "serve": "QT_LOGGING_RULES=kf.i18n=false kde-inhibit --power bun src/server/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "format": "prettier --write .",
