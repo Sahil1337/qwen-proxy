@@ -75,56 +75,58 @@ function renderBlock(key: string, value: unknown): string | undefined {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
-const shortId = (v: unknown) => (typeof v === 'string' ? v.slice(0, 12) : '');
 const secs = (ms: unknown) => `${(Number(ms ?? 0) / 1000).toFixed(1)}s`;
 const str = (v: unknown) => (typeof v === 'string' ? v : v === undefined || v === null ? '' : JSON.stringify(v));
 
-/** A request arrived: what was asked, how it will be treated. */
+const oneLine = (v: unknown, max: number) => {
+  const text = str(v).replace(/\s+/g, ' ').trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+};
+const indent = (text: string, colour: (t: string) => string = (t) => t) => `  ${colour(text)}`;
+
+/** `▶ mode · 1 tool · stream` then the prompt on one indented line. */
 function renderRequest(rec: Record<string, unknown>): string {
   const facts = [
-    cyan(bold(String(rec['mode_requested'] ?? 'adaptive'))),
-    `~${str(rec['prompt_estimate'])} tok`,
-    Number(rec['tool_count'] ?? 0) > 0 ? `${str(rec['tool_count'])} tool(s)` : '',
-    rec['response_format'] ? `format ${str(rec['response_format'])}` : '',
+    String(rec['mode_requested'] ?? 'adaptive'),
+    Number(rec['tool_count'] ?? 0) > 0
+      ? `${str(rec['tool_count'])} tool${Number(rec['tool_count']) > 1 ? 's' : ''}`
+      : '',
+    rec['response_format'] ? str(rec['response_format']) : '',
     rec['stream'] ? 'stream' : '',
   ].filter(Boolean);
-  const head = `${cyan('▶')} ${cyan(bold('request'))}  ${dim(shortId(rec['request_id']))}  ${facts.join(dim(' · '))}`;
-  const body = renderBlock('prompt', rec['prompt']);
-  return body === undefined ? head : `${head}\n${block('prompt', cyan, body)}`;
+  const lines = [`${cyan('▶')} ${cyan(facts.join(' · '))}`];
+  if (rec['prompt']) lines.push(indent(oneLine(rec['prompt'], 160)));
+  return lines.join('\n');
 }
 
-/** A request finished successfully. */
+/** `✔ mode · tokens · speed · time · flags` then tool calls and the answer, indented. */
 function renderCompletion(rec: Record<string, unknown>): string {
-  const flags = [
+  const thinking = Number(rec['thinking_tokens'] ?? 0);
+  const facts = [
+    `${str(rec['mode_used'])} ${dim(`(${str(rec['router_rule'])})`)}`,
+    `${str(rec['completion_tokens'])} tok${thinking > 0 ? dim(` (${thinking} thinking)`) : ''}`,
+    `${str(rec['eval_tps'])} tok/s`,
+    secs(rec['total_ms']),
+    rec['finish_reason'] === 'length' ? yellow('cut off') : '',
     rec['think_budget_hit'] ? yellow('budget hit') : '',
     Number(rec['retries'] ?? 0) > 0 ? yellow(`${str(rec['retries'])} retry`) : '',
     Number(rec['queue_wait_ms'] ?? 0) > 1000 ? yellow(`queued ${secs(rec['queue_wait_ms'])}`) : '',
   ].filter(Boolean);
-  const route = `${str(rec['mode_used'])} (${str(rec['router_rule'])}${rec['router_detail'] ? `: ${str(rec['router_detail'])}` : ''})`;
-  const tokens = `${str(rec['completion_tokens'])} tok${Number(rec['thinking_tokens'] ?? 0) > 0 ? ` (${str(rec['thinking_tokens'])} thinking)` : ''}`;
-  const timing = `${secs(rec['total_ms'])} (prompt ${secs(rec['prompt_eval_ms'])}, gen ${secs(rec['eval_ms'])})`;
-  const facts = [
-    green(bold(route)),
-    str(rec['finish_reason']),
-    tokens,
-    bold(`${str(rec['eval_tps'])} tok/s`),
-    timing,
-    ...flags,
-  ];
-  const lines = [
-    `${green('✔')} ${green(bold('done'))}     ${dim(shortId(rec['request_id']))}  ${facts.join(dim(' · '))}`,
-  ];
-  const calls = renderBlock('tool_calls', rec['tool_calls']);
-  if (calls !== undefined) lines.push(block(`tool calls (${str(rec['tool_parse'])})`, yellow, calls));
-  const answer = renderBlock('content', rec['answer']);
-  if (answer !== undefined) lines.push(block('answer', green, answer));
+  const lines = [`${green('✔')} ${facts.join(dim(' · '))}`];
+  for (const call of (rec['tool_calls'] as Array<{ function: { name: string; arguments: string } }> | undefined) ??
+    []) {
+    lines.push(indent(`⚙ ${call.function.name}(${oneLine(call.function.arguments, 140)})`, yellow));
+  }
+  if (rec['answer']) lines.push(indent(oneLine(rec['answer'], 200), green));
   return lines.join('\n');
 }
 
-/** A request failed; the client got an error envelope. */
+/** `✖ status code · time` then the message. */
 function renderFailure(rec: Record<string, unknown>): string {
-  const head = `${red('✖')} ${red(bold('failed'))}   ${dim(shortId(rec['request_id']))}  ${red(bold(`${str(rec['status'])} ${str(rec['code'])}`))}${dim(' · ')}${secs(rec['total_ms'])}`;
-  return `${head}\n${block('error', red, str(rec['message']))}`;
+  return [
+    `${red('✖')} ${red(`${str(rec['status'])} ${str(rec['code'])}`)}${dim(' · ')}${secs(rec['total_ms'])}`,
+    indent(oneLine(rec['message'], 200), red),
+  ].join('\n');
 }
 
 const EVENT_RENDERERS: Record<string, (rec: Record<string, unknown>) => string> = {
