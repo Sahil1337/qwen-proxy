@@ -4,8 +4,9 @@
   "description": "Minimal OpenAI-compatible proxy over Ollama for Qwen3.5: adaptive thinking, robust tool calls, validated structured output",
   "scripts": {
     "dev": "bun --watch src/server/index.ts",
-    "build": "tsc -p tsconfig.json",
     "start": "bun src/server/index.ts",
+    "serve": "kde-inhibit --power bun src/server/index.ts",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

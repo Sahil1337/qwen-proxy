@@ -34,6 +34,8 @@ Production:
 bun run start
 ```
 
+On a laptop, `bun run serve` does the same but keeps the machine from suspending while the proxy runs (the screen may still blank). It uses KDE's `kde-inhibit`; on GNOME or a headless box use `systemd-inhibit --what=sleep:idle bun run start` or the systemd unit below.
+
 If an Ollama is already listening on `OLLAMA_BASE_URL`, the proxy attaches to it instead of managing its own and logs a warning that the tuning below doesn't apply. To get the tuning, stop the other instance first (`sudo systemctl disable --now ollama` on a package install).
 
 <details>
@@ -107,30 +109,32 @@ Every completion carries a `meetiq` object the OpenAI SDK ignores (router decisi
 ### How a request flows
 
 ```
+
 OpenAI SDK ──► POST /v1/chat/completions
-               │  parse + validate body (zod), estimate prompt size, bearer auth
-               ▼
-            queue slot (MAX_PARALLEL)
-               │
-               ▼
-            router  ──► mode: fast | thinking   (rules 1-6, may make one tiny classifier call)
-               │
-               ▼
-            plan    ──► messages (tool results -> <tool_response>, assistant tool_calls -> <tool_call>)
-                        tools for the model (slimmed) | tools for validation (full)
-                        format (JSON schema -> grammar) | think flag | num_predict
-               │
-               ▼
-            turn    ──► POST /api/chat on Ollama
-                        thinking: budget = THINK_BUDGET_TOKENS + max_tokens
-                        cut off by the budget (no or partial answer)? -> continuation call with forced </think>
-               │
-               ▼
-            validate ──► tool args (ajv) / structured output (ajv)
-                         invalid? -> one retry with the error appended -> 502
-               │
-               ▼
-            OpenAI response (+ meetiq metadata, x-meetiq-* headers, one log line)
+│ parse + validate body (zod), estimate prompt size, bearer auth
+▼
+queue slot (MAX_PARALLEL)
+│
+▼
+router ──► mode: fast | thinking (rules 1-6, may make one tiny classifier call)
+│
+▼
+plan ──► messages (tool results -> <tool_response>, assistant tool_calls -> <tool_call>)
+tools for the model (slimmed) | tools for validation (full)
+format (JSON schema -> grammar) | think flag | num_predict
+│
+▼
+turn ──► POST /api/chat on Ollama
+thinking: budget = THINK_BUDGET_TOKENS + max_tokens
+cut off by the budget (no or partial answer)? -> continuation call with forced </think>
+│
+▼
+validate ──► tool args (ajv) / structured output (ajv)
+invalid? -> one retry with the error appended -> 502
+│
+▼
+OpenAI response (+ meetiq metadata, x-meetiq-* headers, one log line)
+
 ```
 
 ### Thinking modes
