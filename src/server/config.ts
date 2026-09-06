@@ -18,6 +18,8 @@ function buildEnv(runtimeEnv: Record<string, string | undefined>) {
       LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
       /** pretty = coloured human-readable; json = one JSON line per event; auto = pretty on a TTY. */
       LOG_FORMAT: z.enum(['pretty', 'json', 'auto']).default('auto'),
+      /** Include the prompt and an answer preview in request logs. Set false if logs must not hold user content. */
+      LOG_CONTENT: bool(true),
 
       OLLAMA_MANAGED: bool(true),
       OLLAMA_BIN: str('ollama'),

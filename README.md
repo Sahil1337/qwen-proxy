@@ -66,6 +66,7 @@ All settings are environment variables, validated at startup with [t3-env](https
 | `API_KEY`                 | unset                    | When set, `/v1/*` requires `Authorization: Bearer <key>`. `/health` stays open.                                                                   |
 | `LOG_LEVEL`               | `info`                   | `debug` adds a `model.io` event per request with the prompt, the model's full reasoning, tool calls and answer. `trace` adds Ollama's own output. |
 | `LOG_FORMAT`              | `auto`                   | `pretty` (coloured, human-readable), `json` (one line per event), or `auto` (pretty on a terminal, json otherwise).                               |
+| `LOG_CONTENT`             | `true`                   | Include the prompt and an answer preview in the per-request events. Set `false` if logs must not hold user content.                               |
 | `OLLAMA_MANAGED`          | `true`                   | Spawn and supervise `ollama serve`. `false` = attach to an existing server.                                                                       |
 | `OLLAMA_BIN`              | `ollama`                 | Binary to spawn.                                                                                                                                  |
 | `OLLAMA_BASE_URL`         | `http://127.0.0.1:11434` | Where Ollama listens.                                                                                                                             |

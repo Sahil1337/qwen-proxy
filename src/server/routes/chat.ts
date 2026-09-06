@@ -11,10 +11,16 @@ import {
   type ChatRequest,
   type ChunkDelta,
 } from '../core/mapping.js';
-import { decideMode } from '../core/router.js';
+import { decideMode, requestedMode } from '../core/router.js';
 import { SseWriter } from '../core/stream.js';
 import { asyncHandler, toProxyError } from '../middleware.js';
 import { newCompletionId } from '../util/ids.js';
+
+/** Info-level logs carry previews; the full text is in the debug-level `model.io` event. */
+const PROMPT_PREVIEW_CHARS = 600;
+const ANSWER_PREVIEW_CHARS = 400;
+const preview = (text: string, max: number) =>
+  text.length > max ? `${text.slice(0, max)}… (${text.length} chars)` : text;
 
 export function chatRouter(ctx: AppContext): Router {
   const { config, log, queue } = ctx;
@@ -44,6 +50,16 @@ export function chatRouter(ctx: AppContext): Router {
       let queueWaitMs = 0;
       let sse: SseWriter | undefined;
       const base = { request_id: req.id, stream: Boolean(body.stream), prompt_estimate: promptEstimate };
+      log.info(
+        {
+          ...base,
+          mode_requested: requestedMode(body) ?? null,
+          tool_count: body.tool_choice === 'none' ? 0 : (body.tools?.length ?? 0),
+          response_format: body.response_format?.type ?? null,
+          ...(config.LOG_CONTENT ? { prompt: preview(lastUserText(body.messages), PROMPT_PREVIEW_CHARS) } : {}),
+        },
+        'chat.request',
+      );
 
       try {
         const result = await queue.run(async () => {
@@ -63,6 +79,7 @@ export function chatRouter(ctx: AppContext): Router {
             mode_requested: result.meta.mode_requested,
             mode_used: result.meta.mode_used,
             router_rule: result.meta.router.rule,
+            router_detail: result.meta.router.detail ?? null,
             tool_parse: result.meta.tool_parse,
             think_budget_hit: result.meta.think_budget_hit,
             retries: result.meta.retries,
@@ -78,6 +95,12 @@ export function chatRouter(ctx: AppContext): Router {
             eval_tps: result.meta.timing.eval_tps,
             queue_wait_ms: queueWaitMs,
             total_ms: Date.now() - startedAt,
+            ...(config.LOG_CONTENT
+              ? {
+                  tool_calls: result.toolCalls,
+                  answer: result.content ? preview(result.content, ANSWER_PREVIEW_CHARS) : null,
+                }
+              : {}),
           },
           'chat.completion',
         );

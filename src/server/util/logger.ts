@@ -75,6 +75,64 @@ function renderBlock(key: string, value: unknown): string | undefined {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
+const shortId = (v: unknown) => (typeof v === 'string' ? v.slice(0, 12) : '');
+const secs = (ms: unknown) => `${(Number(ms ?? 0) / 1000).toFixed(1)}s`;
+const str = (v: unknown) => (typeof v === 'string' ? v : v === undefined || v === null ? '' : JSON.stringify(v));
+
+/** A request arrived: what was asked, how it will be treated. */
+function renderRequest(rec: Record<string, unknown>): string {
+  const facts = [
+    cyan(bold(String(rec['mode_requested'] ?? 'adaptive'))),
+    `~${str(rec['prompt_estimate'])} tok`,
+    Number(rec['tool_count'] ?? 0) > 0 ? `${str(rec['tool_count'])} tool(s)` : '',
+    rec['response_format'] ? `format ${str(rec['response_format'])}` : '',
+    rec['stream'] ? 'stream' : '',
+  ].filter(Boolean);
+  const head = `${cyan('▶')} ${cyan(bold('request'))}  ${dim(shortId(rec['request_id']))}  ${facts.join(dim(' · '))}`;
+  const body = renderBlock('prompt', rec['prompt']);
+  return body === undefined ? head : `${head}\n${block('prompt', cyan, body)}`;
+}
+
+/** A request finished successfully. */
+function renderCompletion(rec: Record<string, unknown>): string {
+  const flags = [
+    rec['think_budget_hit'] ? yellow('budget hit') : '',
+    Number(rec['retries'] ?? 0) > 0 ? yellow(`${str(rec['retries'])} retry`) : '',
+    Number(rec['queue_wait_ms'] ?? 0) > 1000 ? yellow(`queued ${secs(rec['queue_wait_ms'])}`) : '',
+  ].filter(Boolean);
+  const route = `${str(rec['mode_used'])} (${str(rec['router_rule'])}${rec['router_detail'] ? `: ${str(rec['router_detail'])}` : ''})`;
+  const tokens = `${str(rec['completion_tokens'])} tok${Number(rec['thinking_tokens'] ?? 0) > 0 ? ` (${str(rec['thinking_tokens'])} thinking)` : ''}`;
+  const timing = `${secs(rec['total_ms'])} (prompt ${secs(rec['prompt_eval_ms'])}, gen ${secs(rec['eval_ms'])})`;
+  const facts = [
+    green(bold(route)),
+    str(rec['finish_reason']),
+    tokens,
+    bold(`${str(rec['eval_tps'])} tok/s`),
+    timing,
+    ...flags,
+  ];
+  const lines = [
+    `${green('✔')} ${green(bold('done'))}     ${dim(shortId(rec['request_id']))}  ${facts.join(dim(' · '))}`,
+  ];
+  const calls = renderBlock('tool_calls', rec['tool_calls']);
+  if (calls !== undefined) lines.push(block(`tool calls (${str(rec['tool_parse'])})`, yellow, calls));
+  const answer = renderBlock('content', rec['answer']);
+  if (answer !== undefined) lines.push(block('answer', green, answer));
+  return lines.join('\n');
+}
+
+/** A request failed; the client got an error envelope. */
+function renderFailure(rec: Record<string, unknown>): string {
+  const head = `${red('✖')} ${red(bold('failed'))}   ${dim(shortId(rec['request_id']))}  ${red(bold(`${str(rec['status'])} ${str(rec['code'])}`))}${dim(' · ')}${secs(rec['total_ms'])}`;
+  return `${head}\n${block('error', red, str(rec['message']))}`;
+}
+
+const EVENT_RENDERERS: Record<string, (rec: Record<string, unknown>) => string> = {
+  'chat.request': renderRequest,
+  'chat.completion': renderCompletion,
+  'chat.completion failed': renderFailure,
+};
+
 export function formatPretty(line: string): string {
   let rec: Record<string, unknown>;
   try {
@@ -82,12 +140,17 @@ export function formatPretty(line: string): string {
   } catch {
     return line;
   }
-  const level = LEVELS[Number(rec['level'])] ?? String(rec['level']);
-  const head = `${dim(clock(Number(rec['time'])))} ${level} ${bold(String(rec['msg'] ?? ''))}`;
+  const stamp = dim(clock(Number(rec['time'])));
+  const msg = String(rec['msg'] ?? '');
 
   // Forwarded Ollama output: keep it on one dim line.
-  if (typeof rec['ollama'] === 'string') return `${head} ${gray(rec['ollama'])}`;
+  if (typeof rec['ollama'] === 'string') return `${stamp} ${gray(rec['ollama'])}`;
 
+  const render = EVENT_RENDERERS[msg];
+  if (render) return `${stamp} ${render(rec)}`;
+
+  const level = LEVELS[Number(rec['level'])] ?? String(rec['level']);
+  const head = `${stamp} ${level} ${bold(msg)}`;
   const blockKeys = new Set(BLOCKS.map(([k]) => k));
   const fields = Object.entries(rec)
     .filter(([k]) => !HIDDEN.has(k) && !blockKeys.has(k))
@@ -97,7 +160,6 @@ export function formatPretty(line: string): string {
     const body = renderBlock(key, rec[key]);
     return body === undefined ? undefined : block(title, colour, body);
   }).filter((b): b is string => b !== undefined);
-
   return [fields ? `${head} ${fields}` : head, ...blocks].join('\n');
 }
 
