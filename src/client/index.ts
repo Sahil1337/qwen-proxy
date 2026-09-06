@@ -1,6 +1,7 @@
 /**
- * qwen-proxy client — one file, no dependencies, import it from any Bun/Node
- * backend on the LAN:
+ * qwen-proxy client — no dependencies, import it from any Bun/Node backend on
+ * the LAN. The wire types come from ../shared/types.ts, the same contract the
+ * server is checked against.
  *
  *   import { QwenProxyClient } from 'qwen-proxy/client';   // or a relative path
  *   const qwen = new QwenProxyClient({ baseUrl: 'http://proxy-host:8000', apiKey: '...' });
@@ -11,128 +12,19 @@
  * `runTools()` for a tool-calling loop.
  */
 
-// ---------------------------------------------------------------------------
-// Types (the subset of OpenAI's wire format the proxy implements)
-// ---------------------------------------------------------------------------
+import type {
+  ChatChunk,
+  ChatCompletion,
+  ChatMessage,
+  ChatRequest,
+  ErrorEnvelope,
+  Health,
+  RouteDecision,
+  Tool,
+  ToolCall,
+} from '../shared/types.js';
 
-export type Role = 'system' | 'user' | 'assistant' | 'tool';
-export type Mode = 'fast' | 'thinking' | 'adaptive';
-
-export interface ToolCall {
-  id: string;
-  type: 'function';
-  function: { name: string; arguments: string };
-}
-
-export interface ChatMessage {
-  role: Role;
-  content: string | null;
-  tool_calls?: ToolCall[];
-  tool_call_id?: string;
-}
-
-export interface Tool {
-  type: 'function';
-  function: { name: string; description?: string; parameters?: Record<string, unknown> };
-}
-
-export type ToolChoice = 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } };
-
-export type ResponseFormat =
-  | { type: 'text' }
-  | { type: 'json_object' }
-  | { type: 'json_schema'; json_schema: { name?: string; schema: Record<string, unknown> } };
-
-export interface ChatRequest {
-  messages: ChatMessage[];
-  tools?: Tool[];
-  tool_choice?: ToolChoice;
-  response_format?: ResponseFormat;
-  temperature?: number;
-  top_p?: number;
-  max_tokens?: number;
-  stop?: string | string[];
-  seed?: number;
-  /** Proxy extension: overrides the server's DEFAULT_MODE. */
-  mode?: Mode;
-  /** Proxy extension: include the exact upstream payloads in `meetiq.upstream_requests`. */
-  debug?: boolean;
-}
-
-export interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  completion_tokens_details: { reasoning_tokens: number };
-}
-
-export interface ProxyMeta {
-  router: { mode: 'fast' | 'thinking'; rule: string; detail?: string };
-  mode_requested: Mode | null;
-  mode_used: 'fast' | 'thinking';
-  tool_parse: 'native' | 'fallback' | 'forced' | 'none';
-  think_budget_hit: boolean;
-  retries: number;
-  upstream_calls: number;
-  upstream_ms: number;
-  timing: { load_ms: number; prompt_eval_ms: number; eval_ms: number; eval_tps: number };
-  upstream_requests?: unknown[];
-}
-
-export type FinishReason = 'stop' | 'length' | 'tool_calls';
-
-export interface AssistantMessage {
-  role: 'assistant';
-  content: string | null;
-  reasoning_content?: string;
-  tool_calls?: ToolCall[];
-}
-
-export interface ChatCompletion {
-  id: string;
-  object: 'chat.completion';
-  created: number;
-  model: string;
-  choices: Array<{ index: number; message: AssistantMessage; finish_reason: FinishReason }>;
-  usage: Usage;
-  meetiq: ProxyMeta;
-}
-
-export interface ChatChunk {
-  id: string;
-  object: 'chat.completion.chunk';
-  created: number;
-  model: string;
-  choices: Array<{
-    index: number;
-    delta: {
-      role?: 'assistant';
-      content?: string;
-      reasoning_content?: string;
-      tool_calls?: Array<ToolCall & { index: number }>;
-    };
-    finish_reason: FinishReason | null;
-  }>;
-  usage?: Usage;
-  meetiq?: ProxyMeta;
-}
-
-export interface RouteDecision {
-  mode: 'fast' | 'thinking';
-  rule: string;
-  detail?: string;
-  mode_requested: Mode | null;
-  default_mode: Mode;
-  estimated_prompt_tokens: number;
-  last_user_tokens: number;
-}
-
-export interface Health {
-  status: 'ok' | 'degraded';
-  ollama: { reachable: boolean; version: string | null; managed: boolean; pid: number | null };
-  model: { name: string; loaded: boolean; size_vram: number | null; context_length: number | null };
-  queue: { waiting: number; running: number; concurrency: number };
-}
+export type * from '../shared/types.js';
 
 export class QwenProxyError extends Error {
   constructor(
@@ -147,17 +39,18 @@ export class QwenProxyError extends Error {
   }
 }
 
+/** All optional, and `undefined` is accepted so `process.env.X` can be passed straight through. */
 export interface ClientOptions {
   /** Default: http://127.0.0.1:8000 */
-  baseUrl?: string;
+  baseUrl?: string | undefined;
   /** Sent as `Authorization: Bearer` when the proxy has API_KEY set. */
-  apiKey?: string;
+  apiKey?: string | undefined;
   /** Model id echoed in requests; the proxy serves one model regardless. Default: qwen3.5:4b */
-  model?: string;
+  model?: string | undefined;
   /** Per-request timeout. Default: 10 minutes, matching the proxy's upstream timeout. */
-  timeoutMs?: number;
+  timeoutMs?: number | undefined;
   /** Sent as `x-request-id` when provided; useful for correlating with proxy logs. */
-  requestId?: () => string;
+  requestId?: (() => string) | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,7 +83,7 @@ export class QwenProxyClient {
     const res = await this.send('/v1/chat/completions', { model: this.model, ...request, stream: true }, signal);
     if (!res.body) throw new QwenProxyError(502, 'empty_stream', 'Proxy returned an empty stream');
     for await (const data of sseData(res.body)) {
-      const chunk = JSON.parse(data) as ChatChunk & { error?: { code: string; message: string; details?: unknown } };
+      const chunk = JSON.parse(data) as ChatChunk & Partial<ErrorEnvelope>;
       if (chunk.error) throw new QwenProxyError(502, chunk.error.code, chunk.error.message, chunk.error.details);
       yield chunk;
     }
@@ -305,7 +198,7 @@ export class QwenProxyClient {
     }
     if (res.ok) return res;
 
-    let envelope: { error?: { code?: string; message?: string; details?: unknown } } = {};
+    let envelope: Partial<ErrorEnvelope> = {};
     try {
       envelope = (await res.json()) as typeof envelope;
     } catch {

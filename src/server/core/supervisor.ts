@@ -6,6 +6,14 @@ import type { Logger } from '../util/logger.js';
 import { baseOptions } from './mapping.js';
 
 /**
+ * Ollama gets only what it needs from the proxy's environment: the shell that
+ * started the proxy may hold unrelated secrets, and a child process inherits
+ * everything by default.
+ */
+const INHERITED_ENV =
+  /^(PATH|HOME|USER|LOGNAME|LANG|LC_[A-Z]+|TZ|TMPDIR|LD_LIBRARY_PATH|DISPLAY|XDG_[A-Z_]+|HTTPS?_PROXY|NO_PROXY|https?_proxy|no_proxy|OLLAMA_[A-Z_]+|GGML_[A-Z_]+|VK_[A-Z_]+|CUDA_[A-Z_]+|HSA_[A-Z_]+|HIP_[A-Z_]+|ROCR_[A-Z_]+|GPU_[A-Z_]+)$/;
+
+/**
  * Starts `ollama serve` as a child process with the inference tuning from the
  * proxy's own config, waits until it answers, restarts it if it dies, and
  * stops it on shutdown. If an Ollama is already listening on the configured
@@ -60,8 +68,9 @@ export class OllamaSupervisor {
 
   private childEnv(): NodeJS.ProcessEnv {
     const { hostname, port } = new URL(this.config.OLLAMA_BASE_URL);
+    const inherited = Object.fromEntries(Object.entries(process.env).filter(([name]) => INHERITED_ENV.test(name)));
     const env: NodeJS.ProcessEnv = {
-      ...process.env,
+      ...inherited,
       OLLAMA_HOST: `${hostname}:${port || '11434'}`,
       OLLAMA_CONTEXT_LENGTH: String(this.config.NUM_CTX),
       OLLAMA_NUM_PARALLEL: String(this.config.MAX_PARALLEL),

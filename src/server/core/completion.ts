@@ -7,14 +7,10 @@ import {
   toOllamaMessages,
   renderToolCallBlock,
   type ChatRequest,
-  type FinishReason,
-  type ProxyMeta,
   type Tool,
-  type ToolCallOut,
   type ToolChoice,
-  type ToolParse,
-  type Usage,
 } from './mapping.js';
+import type { FinishReason, ProxyMeta, ToolCall, ToolParse, Usage } from '../../shared/types.js';
 import type { OllamaClient, OllamaMessage } from './ollama.js';
 import { requestedMode, type RouteDecision } from './router.js';
 import { resolveFormat, validateStructuredOutput } from './structured.js';
@@ -40,13 +36,13 @@ export interface CompletionDeps {
 }
 
 export interface StreamDelta extends Delta {
-  toolCalls?: ToolCallOut[];
+  toolCalls?: ToolCall[];
 }
 
 export interface CompletionResult {
   content: string | null;
   reasoning: string | null;
-  toolCalls: ToolCallOut[];
+  toolCalls: ToolCall[];
   finishReason: FinishReason;
   usage: Usage;
   meta: ProxyMeta;
@@ -158,7 +154,7 @@ export async function runChatCompletion(
   let turn = await turnFor(messages);
   let toolParse: ToolParse = 'none';
   let content: string | null = turn.content.trim() || null;
-  let toolCalls: ToolCallOut[] = [];
+  let toolCalls: ToolCall[] = [];
 
   if (activeTools) {
     const extract = (t: TurnResult): ParseResult => {

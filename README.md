@@ -215,7 +215,7 @@ Always the OpenAI envelope:
 
 ## Client
 
-[`client/index.ts`](client/index.ts) is a single dependency-free file to import from another service. It never imports the server code, so you can copy it or reference it as `qwen-proxy/client`.
+[`src/client/index.ts`](src/client/index.ts) is a dependency-free client to import from another service. It shares only the wire types in [`src/shared/types.ts`](src/shared/types.ts) with the server, so you can copy the two files or reference them as `qwen-proxy/client` and `qwen-proxy/types`.
 
 ```ts
 import { QwenProxyClient } from 'qwen-proxy/client';
@@ -327,7 +327,7 @@ Wants=network-online.target
 User=sahil
 WorkingDirectory=/home/sahil/qwen-proxy
 EnvironmentFile=/home/sahil/qwen-proxy/.env
-ExecStart=/usr/bin/bun run src/index.ts
+ExecStart=/usr/bin/bun run src/server/index.ts
 Restart=on-failure
 RestartSec=5
 KillMode=mixed

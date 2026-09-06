@@ -3,6 +3,19 @@ import type { Config } from '../config.js';
 import { invalidRequest } from './errors.js';
 import type { OllamaMessage, OllamaOptions } from './ollama.js';
 import { estimateJsonTokens, estimateTokens } from '../util/tokens.js';
+import type {
+  ChatChunk,
+  ChatCompletion,
+  ChatRequest as WireChatRequest,
+  ChunkDelta,
+  FinishReason,
+  Mode,
+  ProxyMeta,
+  ToolCall,
+  Usage,
+} from '../../shared/types.js';
+
+export type { ChunkDelta };
 
 // ---------------------------------------------------------------------------
 // OpenAI request schema (unknown fields are kept so SDK extras never 400)
@@ -80,7 +93,14 @@ export type ChatMessage = z.infer<typeof messageSchema>;
 export type Tool = z.infer<typeof toolSchema>;
 export type ToolChoice = z.infer<typeof toolChoiceSchema>;
 export type ResponseFormat = z.infer<typeof responseFormatSchema>;
-export type RequestedMode = (typeof MODES)[number];
+export type RequestedMode = Mode;
+
+/**
+ * Contract check: every request the shared `ChatRequest` type allows must be
+ * accepted by the validator. Fails to compile if the two drift apart.
+ */
+type Assert<T extends true> = T;
+export type RequestContract = Assert<WireChatRequest extends z.input<typeof chatRequestSchema> ? true : false>;
 
 export function parseChatRequest(body: unknown): ChatRequest {
   const result = chatRequestSchema.safeParse(body);
@@ -195,51 +215,19 @@ export function resolveMaxTokens(req: ChatRequest, config: Config): number {
 // Responses
 // ---------------------------------------------------------------------------
 
-export type FinishReason = 'stop' | 'length' | 'tool_calls';
-export type ToolParse = 'native' | 'fallback' | 'forced' | 'none';
-
-export interface ToolCallOut {
-  id: string;
-  type: 'function';
-  function: { name: string; arguments: string };
-}
-
-export interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  completion_tokens_details: { reasoning_tokens: number };
-}
-
-/** Proxy-specific metadata, exposed under the `meetiq` key the OpenAI SDK ignores. */
-export interface ProxyMeta {
-  router: { mode: 'fast' | 'thinking'; rule: string; detail?: string };
-  mode_requested: RequestedMode | null;
-  mode_used: 'fast' | 'thinking';
-  tool_parse: ToolParse;
-  think_budget_hit: boolean;
-  retries: number;
-  upstream_calls: number;
-  upstream_ms: number;
-  /** From Ollama's own counters. `load_ms > 0` means the model was (re)loaded for this request. */
-  timing: { load_ms: number; prompt_eval_ms: number; eval_ms: number; eval_tps: number };
-  /** Present only when the request had `debug: true`: the exact payloads sent to Ollama. */
-  upstream_requests?: unknown[];
-}
-
 export interface CompletionParts {
   id: string;
   created: number;
   model: string;
   content: string | null;
   reasoning: string | null;
-  toolCalls: ToolCallOut[];
+  toolCalls: ToolCall[];
   finishReason: FinishReason;
   usage: Usage;
   meta: ProxyMeta;
 }
 
-export function buildCompletion(p: CompletionParts) {
+export function buildCompletion(p: CompletionParts): ChatCompletion {
   return {
     id: p.id,
     object: 'chat.completion' as const,
@@ -263,13 +251,6 @@ export function buildCompletion(p: CompletionParts) {
   };
 }
 
-export interface ChunkDelta {
-  role?: 'assistant';
-  content?: string;
-  reasoning_content?: string;
-  tool_calls?: Array<ToolCallOut & { index: number }>;
-}
-
 export function buildChunk(p: {
   id: string;
   created: number;
@@ -278,7 +259,7 @@ export function buildChunk(p: {
   finishReason?: FinishReason | null;
   usage?: Usage;
   meta?: ProxyMeta;
-}) {
+}): ChatChunk {
   return {
     id: p.id,
     object: 'chat.completion.chunk' as const,

@@ -29,29 +29,43 @@ multi-tenant auth, no application prompt templates. Callers own their prompts.
 
 ## Layout
 
+Three trees with one-way dependencies. `shared` has no runtime code; `client`
+and `server` both import it; neither imports the other.
+
 ```
 src/
-  index.ts            bootstrap: load config, start Ollama, listen, handle signals
-  app.ts              createApp(deps) -> Express app; the only place routes are wired
-  config.ts           zod-validated env -> Config
-  middleware.ts       request id, bearer auth, error envelope
-  routes/             thin HTTP handlers; no business logic
-  core/
-    ollama.ts         native /api/chat client (stream + non-stream) + error mapping
-    supervisor.ts     spawn/wait/restart/stop the managed `ollama serve`
-    mapping.ts        OpenAI <-> Ollama request/response types and conversion
-    router.ts         adaptive fast/thinking decision (rules 1-6)
-    thinking.ts       <think> splitting, budget enforcement, one model "turn"
-    tools.ts          tool prompt injection, <tool_call> parser, JSON repair, ajv
-    structured.ts     response_format -> format, output validation
-    completion.ts     orchestration of one chat completion (retries, meta)
-    stream.ts         SSE writer in OpenAI chunk format
-    queue.ts          bounded concurrency with a wait timeout
-    errors.ts         ProxyError -> OpenAI error envelope
-  util/               tokens (chars/4 estimate), ids, logger
-client/index.ts       importable, dependency-free client for other services (never imports src/)
-examples/             one runnable script per use case; see examples/README.md
+  shared/types.ts     the wire contract: OpenAI chat-completions shapes + proxy
+                      extensions (mode, debug, meetiq, reasoning_content)
+  client/index.ts     dependency-free HTTP client for other services
+                      (chat, stream, route, inspect, health, extract, runTools)
+  server/
+    index.ts          bootstrap: load config, start Ollama, listen, handle signals
+    app.ts            createApp(deps) -> Express app; the only place routes are wired
+    config.ts         validated env -> Config
+    middleware.ts     request id, bearer auth, error envelope
+    routes/           thin HTTP handlers; no business logic
+    core/
+      ollama.ts       native /api/chat client (stream + non-stream) + error mapping
+      supervisor.ts   spawn/wait/restart/stop the managed `ollama serve`
+      mapping.ts      request validation (zod) and response builders, typed
+                      against shared/types.ts
+      router.ts       adaptive fast/thinking decision (rules 1-6)
+      thinking.ts     <think> splitting, budget enforcement, one model "turn"
+      tools.ts        tool prompt injection, <tool_call> parser, JSON repair, ajv
+      structured.ts   response_format -> format, output validation
+      completion.ts   orchestration of one chat completion (retries, meta)
+      stream.ts       SSE writer in OpenAI chunk format
+      queue.ts        bounded concurrency with a wait timeout
+      errors.ts       ProxyError -> OpenAI error envelope
+    util/             tokens (chars/4 estimate), ids, logger
+examples/             one runnable script per use case, built on the client
 ```
+
+The contract is enforced at compile time: `buildCompletion`/`buildChunk`
+return the shared response types, and `RequestContract` in `mapping.ts` fails
+to compile if the shared `ChatRequest` stops being accepted by the validator.
+Change the wire format in `shared/types.ts` first; the compiler then points at
+what the server and client must adjust.
 
 ## Conventions
 

@@ -5,10 +5,9 @@
  *
  *   bun examples/02-thinking.ts
  */
-import { line, MODEL, post } from './lib.js';
+import { line, qwen } from './lib.js';
 
-const { body } = await post('/v1/chat/completions', {
-  model: MODEL,
+const completion = await qwen.chat({
   mode: 'thinking',
   max_tokens: 300,
   messages: [
@@ -20,11 +19,11 @@ const { body } = await post('/v1/chat/completions', {
   ],
 });
 
-const msg = body.choices[0].message;
-line('budget hit', body.meetiq.think_budget_hit);
+const msg = completion.choices[0]!.message;
+line('budget hit', completion.meetiq.think_budget_hit);
 line(
   'tokens',
-  `${body.usage.completion_tokens} total, ~${body.usage.completion_tokens_details.reasoning_tokens} reasoning`,
+  `${completion.usage.completion_tokens} total, ~${completion.usage.completion_tokens_details.reasoning_tokens} reasoning`,
 );
 console.log('\n--- reasoning\n' + msg.reasoning_content);
 console.log('\n--- answer\n' + msg.content);

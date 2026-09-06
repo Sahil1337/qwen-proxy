@@ -1,6 +1,7 @@
 import type { Ajv } from 'ajv';
 import { invalidRequest } from './errors.js';
-import type { Tool, ToolCallOut, ToolChoice } from './mapping.js';
+import type { Tool, ToolChoice } from './mapping.js';
+import type { ToolCall } from '../../shared/types.js';
 import type { OllamaMessage, OllamaToolCall } from './ollama.js';
 import { splitThink } from './thinking.js';
 import { newToolCallId } from '../util/ids.js';
@@ -214,7 +215,7 @@ export function validateToolCalls(calls: ParsedToolCall[], tools: Tool[], ajv: A
   return errors;
 }
 
-export function toOpenAIToolCalls(calls: ParsedToolCall[]): ToolCallOut[] {
+export function toOpenAIToolCalls(calls: ParsedToolCall[]): ToolCall[] {
   return calls.map((c) => ({
     id: newToolCallId(),
     type: 'function',

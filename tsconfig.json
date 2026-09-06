@@ -14,7 +14,7 @@
     "sourceMap": true,
     "declaration": false,
     "outDir": "dist",
-    "rootDir": "."
+    "rootDir": "src"
   },
-  "include": ["src", "client"]
+  "include": ["src"]
 }

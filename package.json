@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "description": "Minimal OpenAI-compatible proxy over Ollama for Qwen3.5: adaptive thinking, robust tool calls, validated structured output",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun --watch src/server/index.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "bun src/index.ts",
+    "start": "bun src/server/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -34,6 +34,7 @@
     "typescript": "^7.0.2"
   },
   "exports": {
-    "./client": "./client/index.ts"
+    "./client": "./src/client/index.ts",
+    "./types": "./src/shared/types.ts"
   }
 }

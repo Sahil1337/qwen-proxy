@@ -1,15 +1,15 @@
 /**
- * See exactly what reaches the model. `POST /v1/inspect` returns the first
+ * See exactly what reaches the model. `qwen.inspect()` returns the first
  * upstream payload without generating (note the slimmed tool schema); adding
  * `debug: true` to a real request returns every payload that was sent,
  * including retries and the thinking continuation.
  *
  *   bun examples/06-inspect-and-debug.ts
  */
-import { MODEL, post } from './lib.js';
+import type { ChatRequest } from '../src/client/index.js';
+import { qwen } from './lib.js';
 
-const request = {
-  model: MODEL,
+const request: ChatRequest = {
   messages: [{ role: 'user', content: 'What is the weather in Oslo?' }],
   tools: [
     {
@@ -29,10 +29,9 @@ const request = {
   ],
 };
 
-const inspect = await post('/v1/inspect', request);
-console.log('--- /v1/inspect');
-console.log(JSON.stringify(inspect.body, null, 2));
+console.log('--- inspect (nothing generated)');
+console.log(JSON.stringify(await qwen.inspect(request), null, 2));
 
-const real = await post('/v1/chat/completions', { ...request, debug: true });
+const completion = await qwen.chat({ ...request, debug: true });
 console.log('\n--- meetiq.upstream_requests (what was actually sent)');
-console.log(JSON.stringify(real.body.meetiq.upstream_requests, null, 2));
+console.log(JSON.stringify(completion.meetiq.upstream_requests, null, 2));
