@@ -1,70 +1,135 @@
 # meetAI
 
-Project memory and reasoning over meetings: transcripts become structured
-propositions, propositions become time-aware memory, memory answers questions
-about what was decided, who committed to what, and what changed — with the
-transcript lines as evidence. Product context in
-[`docs/product-spec.md`](docs/product-spec.md); the target structure and why
-in [`docs/architecture.md`](docs/architecture.md); who builds what in
-[`docs/work-split.md`](docs/work-split.md).
+**Project memory for teams that keep forgetting what they decided.**
+
+Teams meet, decide things, promise dates, hit blockers, and change their minds.
+A few weeks later nobody can reconstruct *why* a decision was made, who
+committed to what, or which old agreement the new plan just contradicted. The
+recording does not help — nobody rewatches an hour of video to find one sentence.
+
+meetAI reads meeting transcripts and builds a **living memory of the project**
+out of them: not a summary you read once, but structured claims that accumulate,
+change, and can be questioned later, with the original transcript lines attached
+as evidence.
+
+## What that looks like
+
+**Monday's meeting**
+
+> Rahul will complete the payment API by Friday.
+
+meetAI records a commitment — Rahul, payment API, due Friday — sourced to that
+line in Monday's transcript.
+
+**The following Monday**
+
+> The payment API is still incomplete because the gateway documentation was delayed.
+
+meetAI does not simply log a second fact. It recognises this as *the same
+commitment*, now missed; that a blocker appeared; and that the blocker is
+external. So a week later someone can ask:
+
+> **Why is the payment API delayed?**
+
+and get an answer that cites both meetings — rather than a summary telling them
+the payment API was discussed.
+
+The questions it is built to answer: what changed since the last meeting, who
+committed to what, what is at risk, what is blocked, and which decision
+contradicts which.
+
+## Status: early, and honest about it
+
+This is a **student project under active development** — a B.Tech minor project
+at SGSITS Indore, built by five people between August 2026 and October 2027. It
+is not a product, and much of it is scaffolding today.
+
+| Part | State |
+| --- | --- |
+| `apps/proxy` — LLM serving layer | **Working**, used daily |
+| `packages/ai` — extraction, tool layer, prompts | **Mostly built**; answering is a stub |
+| `packages/ingestion` — windowing, processing job | Windowing built; job is a stub |
+| `packages/memory` — persistence, state, contradictions | Scaffolded |
+| `packages/retrieval` — embeddings, index, search | Scaffolded |
+| `apps/api`, `apps/web` | Scaffolded |
+
+Known issues are written down rather than hidden — see
+[`docs/audit.md`](docs/audit.md), which includes a demonstrated case of the
+ambiguity resolver inventing a referent.
+
+Transcription and speaker diarization are **out of scope**. meetAI assumes the
+transcript already exists, one line per turn:
+
+```
+Yash [15:03 2026-09-07]: I'm not convinced chunking the transcript is going to work.
+```
+
+## How it works
+
+```
+transcript → windows → extraction (LLM + tools) → propositions
+                                                       │
+                                                       ▼
+                          memory ← entity resolution ← claims
+                             │
+                             ├── state changes, contradictions, timeline
+                             └── retrieval → evidence-cited answers
+```
+
+Extraction runs against a **self-hosted Qwen3.5-4B on a laptop GPU** — an RTX
+3050 with 4 GB of VRAM — rather than a hosted API, so the system can be
+demonstrated without depending on someone's API key or an internet service being
+up. That constraint shapes everything: small context windows, JSON-schema
+constrained output, and tool calls instead of one giant prompt.
+
+## If you starred or forked `qwen-proxy`
+
+You are in the right place — this repository **was** `qwen-proxy`, renamed. The
+proxy is still here at [`apps/proxy/`](apps/proxy/), still MIT licensed, still
+usable on its own: a minimal OpenAI-compatible server over Ollama with adaptive
+thinking, tool-call parsing for models whose chat templates do not emit
+`tool_calls`, and validated structured output. Its README, its docs and its
+commit history all moved with it, and it gained a considerably better client on
+the way. See [`apps/proxy/README.md`](apps/proxy/README.md).
+
+meetAI grew around it because the proxy was always the thing meetAI needed.
+
+## Running it
+
+Requires [Bun](https://bun.sh). There is no build step.
+
+```bash
+bun install          # one lockfile covers every workspace
+bun run typecheck    # every package, in parallel
+bun run dev:proxy    # the proxy — run this on the machine with the GPU
+bun run eval         # extraction quality against a live proxy
+```
+
+`bun run eval` needs a reachable proxy. Point it at your own with
+`PROXY_BASE_URL=http://your-host:8000 bun run eval`.
 
 ## Layout
 
 ```
-apps/            things that run — each has a process and a deploy target
-  proxy/         qwen-proxy: OpenAI-compatible server over Ollama/Qwen3.5
-  api/           the backend: HTTP surface + composition root        (unit 1)
-  web/           the frontend: React, consumes the HTTP API only      (unit 5)
-packages/        things that get imported — never run standalone
-  core/          the shared contracts: domain model (zod) + interfaces between units + the transcript grammar
-  ingestion/     transcript intake, windowing, the processing job     (unit 1)
-  ai/            extraction agent, tool layer, prompts, answering     (unit 2)
-  memory/        persistence, entity resolution, state, changes      (unit 3)
-  retrieval/     embeddings, index, search                            (unit 4)
-  tsconfig/      the base tsconfig everything else extends
-evals/           eval suites — not deployed, not imported
-  propositions/  extraction quality: fixtures, checks, manual verdict loop
-docs/            product spec, architecture, audit, work split, reading list
+apps/proxy      OpenAI-compatible LLM server over Ollama (MIT, standalone)
+apps/api        backend: HTTP surface and composition root
+apps/web        frontend: React, talks to the API over HTTP
+packages/core   shared contracts — the domain model, as zod schemas
+packages/*      one package per area: ingestion, ai, memory, retrieval
+evals/          extraction quality suites
+docs/           product spec, architecture, audit, work split
 ```
 
-`apps/` vs `packages/` is the only split rule: an app has a port, a package is
-an import. Each unit's `README.md` states its owner, its boundary, and its
-first task.
+## Documentation
 
-## Working in it
+- [`docs/product-spec.md`](docs/product-spec.md) — what the system is meant to do, in full
+- [`docs/architecture.md`](docs/architecture.md) — the module boundaries, and why they are where they are
+- [`docs/audit.md`](docs/audit.md) — an honest review of the codebase, including known bugs
+- [`docs/work-split.md`](docs/work-split.md) — how the work divides across five people
+- [`CLAUDE.md`](CLAUDE.md) — conventions for anyone, or anything, writing code here
 
-```bash
-bun install          # one lockfile at the root covers every workspace
-bun run typecheck    # every package, in parallel — must stay clean
-bun run eval         # proposition extraction evals against the live proxy
-bun run dev:api      # the backend
-bun run dev:proxy    # the proxy, on the machine with the GPU
-```
+## License
 
-There is no build step for internal packages: they export TypeScript source
-through their `exports` map, and everything runs under Bun. Don't add a build
-unless something genuinely needs one.
-
-## Rules that matter
-
-- **Imports flow one way: apps → packages → core.** A unit package
-  (`ingestion`, `ai`, `memory`, `retrieval`) imports `@meetai/core` and
-  nothing else in `packages/`. The only place two units meet is
-  `apps/api/src/container.ts`.
-- **Any type that crosses a unit boundary lives in `@meetai/core`**, as a zod
-  schema. Not in the unit that happened to need it first.
-- **`apps/web` imports `@meetai/core` type-only** and otherwise talks to
-  `apps/api` over HTTP. It never calls the proxy.
-- **Nothing in `packages/` imports from `apps/`.** The one exception is
-  `qwen-proxy`, which publishes a client through its `exports` map — that is
-  a maintained contract, not an app internal.
-- **This repository is public, and it began life as `qwen-proxy`.** It was
-  renamed to `meet-ai`; the proxy's own history is still here, and so are the
-  people who starred and forked it when it was a standalone proxy. That is why
-  `apps/proxy/` keeps its own `LICENSE` (MIT), `AGENTS.md` and house style —
-  single quotes, 120 columns, NodeNext `.js` specifiers. Follow those inside
-  that directory and the root style outside it.
-- **`.env` per app, never one at the root.** The proxy runs on a different
-  machine than the API; a shared env file would be a lie.
-- **The proxy is a dumb, stateless endpoint.** Retrieval, embeddings, memory
-  and state never run there.
+`apps/proxy/` is MIT — see [`apps/proxy/LICENSE`](apps/proxy/LICENSE). The rest
+of the repository is not licensed for reuse yet; if you want to use it, open an
+issue and ask.
