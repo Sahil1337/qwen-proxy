@@ -38,24 +38,22 @@ The questions it is built to answer: what changed since the last meeting, who
 committed to what, what is at risk, what is blocked, and which decision
 contradicts which.
 
-## Status: early, and honest about it
+## Status
 
-This is a **student project under active development** — a B.Tech minor project
-at SGSITS Indore, built by five people between August 2026 and October 2027. It
-is not a product, and much of it is scaffolding today.
+Under active development. Where each part stands:
 
 | Part | State |
 | --- | --- |
-| `apps/proxy` — LLM serving layer | **Working**, used daily |
-| `packages/ai` — extraction, tool layer, prompts | **Mostly built**; answering is a stub |
-| `packages/ingestion` — windowing, processing job | Windowing built; job is a stub |
-| `packages/memory` — persistence, state, contradictions | Scaffolded |
-| `packages/retrieval` — embeddings, index, search | Scaffolded |
-| `apps/api`, `apps/web` | Scaffolded |
+| `apps/proxy` — LLM serving layer | Working, in daily use |
+| `packages/ai` — extraction, tool layer, prompts | Built; answering in progress |
+| `packages/ingestion` — windowing, processing job | Windowing built; job in progress |
+| `packages/memory` — persistence, state, contradictions | Contracts defined, implementation in progress |
+| `packages/retrieval` — embeddings, index, search | Contracts defined, implementation in progress |
+| `apps/api`, `apps/web` | Contracts defined, implementation in progress |
 
-Known issues are written down rather than hidden — see
-[`docs/audit.md`](docs/audit.md), which includes a demonstrated case of the
-ambiguity resolver inventing a referent.
+Known issues are tracked in [`docs/audit.md`](docs/audit.md) rather than left
+implicit — including a demonstrated case of the ambiguity resolver inventing a
+referent.
 
 Transcription and speaker diarization are **out of scope**. meetAI assumes the
 transcript already exists, one line per turn:
@@ -77,22 +75,10 @@ transcript → windows → extraction (LLM + tools) → propositions
 ```
 
 Extraction runs against a **self-hosted Qwen3.5-4B on a laptop GPU** — an RTX
-3050 with 4 GB of VRAM — rather than a hosted API, so the system can be
-demonstrated without depending on someone's API key or an internet service being
-up. That constraint shapes everything: small context windows, JSON-schema
-constrained output, and tool calls instead of one giant prompt.
-
-## If you starred or forked `qwen-proxy`
-
-You are in the right place — this repository **was** `qwen-proxy`, renamed. The
-proxy is still here at [`apps/proxy/`](apps/proxy/), still MIT licensed, still
-usable on its own: a minimal OpenAI-compatible server over Ollama with adaptive
-thinking, tool-call parsing for models whose chat templates do not emit
-`tool_calls`, and validated structured output. Its README, its docs and its
-commit history all moved with it, and it gained a considerably better client on
-the way. See [`apps/proxy/README.md`](apps/proxy/README.md).
-
-meetAI grew around it because the proxy was always the thing meetAI needed.
+3050 with 4 GB of VRAM — rather than a hosted API, so the whole system runs end
+to end with no API keys and no external dependency. That constraint shapes
+everything: small context windows, JSON-schema constrained output, and tool
+calls instead of one giant prompt.
 
 ## Running it
 
@@ -125,7 +111,7 @@ docs/           product spec, architecture, audit, work split
 - [`docs/product-spec.md`](docs/product-spec.md) — what the system is meant to do, in full
 - [`docs/architecture.md`](docs/architecture.md) — the module boundaries, and why they are where they are
 - [`docs/audit.md`](docs/audit.md) — an honest review of the codebase, including known bugs
-- [`docs/work-split.md`](docs/work-split.md) — how the work divides across five people
+- [`docs/work-split.md`](docs/work-split.md) — how the work divides across the team
 - [`CLAUDE.md`](CLAUDE.md) — conventions for anyone, or anything, writing code here
 
 ## License

@@ -1,16 +1,16 @@
 {
-  "name": "@meetai/ingestion",
+  "name": "@meetai/evals-retrieval",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
+  "description": "Retrieval quality against a golden query set: hit@k, MRR, and out-of-domain rejection",
   "scripts": {
+    "eval": "bun src/run.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@meetai/core": "workspace:*",
+    "@meetai/retrieval": "workspace:*",
     "@t3-oss/env-core": "^0.13.11",
     "zod": "^4.5.4"
   },

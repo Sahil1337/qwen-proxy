@@ -1,0 +1,87 @@
+[
+  {
+    "query": "why did we pick Postgres instead of a dedicated vector database?",
+    "expect": ["Postgres with pgvector chosen over Qdrant/Chroma"],
+    "kind": "semantic"
+  },
+  {
+    "query": "who is responsible for the database work?",
+    "expect": ["Tejasva owns database and retrieval"],
+    "kind": "ownership"
+  },
+  {
+    "query": "who is doing the extraction prompt?",
+    "expect": ["Yash owns extraction"],
+    "kind": "ownership"
+  },
+  {
+    "query": "who is building the citations UI?",
+    "expect": ["Rishita owns Q&A side and citations"],
+    "kind": "ownership"
+  },
+  {
+    "query": "what is due on Friday?",
+    "expect": ["Yash will send the final claim schema field list by Friday", "Yash will send the schema fields by Friday"],
+    "kind": "deadline"
+  },
+  {
+    "query": "when is the internal review?",
+    "expect": ["Internal review is scheduled for late October"],
+    "kind": "deadline"
+  },
+  {
+    "query": "how long does the chunk window need to be?",
+    "expect": ["60-second chunks"],
+    "kind": "semantic"
+  },
+  {
+    "query": "are we building speech to text ourselves?",
+    "expect": ["will not include transcription or diarization"],
+    "kind": "semantic"
+  },
+  {
+    "query": "why can't the embedding model run on the gaming laptop?",
+    "expect": ["cannot run on Nitro due to GPU memory"],
+    "kind": "semantic"
+  },
+  {
+    "query": "what is blocking the reranker?",
+    "expect": ["Golden evaluation set required before reranker", "reranker explicitly deferred until golden evaluation set"],
+    "kind": "semantic"
+  },
+  {
+    "query": "what happens if the LLM rewrites a claim incorrectly?",
+    "expect": ["Extraction accuracy is the biggest failure point"],
+    "kind": "risk"
+  },
+  {
+    "query": "should the context header go into the vector?",
+    "expect": ["context header", "not meeting metadata"],
+    "kind": "semantic"
+  },
+  {
+    "query": "how do we decide whether to use SQL or vector search for a question?",
+    "expect": ["LLM classification call will decide whether a query is structured or semantic", "two-tier approach"],
+    "kind": "semantic"
+  },
+  {
+    "query": "why is upload not going to return the result immediately?",
+    "expect": ["background job for extraction", "too long to be synchronous"],
+    "kind": "semantic"
+  },
+  {
+    "query": "what frontend framework are we using?",
+    "expect": ["React/Vite/TypeScript frontend"],
+    "kind": "semantic"
+  },
+  {
+    "query": "what is the team's plan for the christmas party?",
+    "expect": [],
+    "kind": "out-of-domain"
+  },
+  {
+    "query": "which cloud provider are we deploying to?",
+    "expect": [],
+    "kind": "out-of-domain"
+  }
+]

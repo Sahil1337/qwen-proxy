@@ -63,7 +63,23 @@
         "@meetai/ai": "workspace:*",
         "@meetai/core": "workspace:*",
         "@meetai/ingestion": "workspace:*",
+        "@t3-oss/env-core": "^0.13.11",
         "qwen-proxy": "workspace:*",
+        "zod": "^4.5.4",
+      },
+      "devDependencies": {
+        "@meetai/tsconfig": "workspace:*",
+        "typescript": "^5",
+      },
+    },
+    "evals/retrieval": {
+      "name": "@meetai/evals-retrieval",
+      "version": "0.0.0",
+      "dependencies": {
+        "@meetai/core": "workspace:*",
+        "@meetai/retrieval": "workspace:*",
+        "@t3-oss/env-core": "^0.13.11",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@meetai/tsconfig": "workspace:*",
@@ -99,6 +115,8 @@
       "version": "0.0.0",
       "dependencies": {
         "@meetai/core": "workspace:*",
+        "@t3-oss/env-core": "^0.13.11",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@meetai/tsconfig": "workspace:*",
@@ -140,6 +158,8 @@
     "@meetai/core": ["@meetai/core@workspace:packages/core"],
 
     "@meetai/evals-propositions": ["@meetai/evals-propositions@workspace:evals/propositions"],
+
+    "@meetai/evals-retrieval": ["@meetai/evals-retrieval@workspace:evals/retrieval"],
 
     "@meetai/ingestion": ["@meetai/ingestion@workspace:packages/ingestion"],
 

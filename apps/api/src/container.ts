@@ -31,7 +31,7 @@ import {
   InMemoryProjectStore,
   InMemoryPropositionStore,
 } from "@meetai/memory";
-import { HttpEmbedder, HybridSearcher, PropositionIndexer } from "@meetai/retrieval";
+import { HttpEmbedder, JsonVectorStore, PropositionIndexer, VectorSearcher } from "@meetai/retrieval";
 import { QwenProxyClient } from "qwen-proxy/client";
 
 export type Container = {
@@ -53,6 +53,10 @@ export function createContainer(): Container {
   const proxy = new QwenProxyClient({ baseUrl: config.proxyBaseUrl, apiKey: config.proxyApiKey });
   // Model name and dimensions are retrieval's decision; placeholders until unit 4 picks one.
   const embedder = new HttpEmbedder(config.embedderBaseUrl, "unchosen", 768);
+  // A JSON file is the index until the database question is settled. Swapping
+  // it for pgvector replaces these two lines and nothing else: everyone
+  // upstream only ever sees `Indexer` and `Searcher`.
+  const index = JsonVectorStore.open(config.indexPath, embedder.model, embedder.dimensions);
   return {
     config,
     projects: new InMemoryProjectStore(),
@@ -63,7 +67,7 @@ export function createContainer(): Container {
     queries: new InMemoryMemoryQueries(),
     extractor: createExtractor(proxy),
     answerer: createAnswerer(proxy),
-    indexer: new PropositionIndexer(embedder),
-    searcher: new HybridSearcher(embedder),
+    indexer: new PropositionIndexer(embedder, index),
+    searcher: new VectorSearcher(embedder, index),
   };
 }

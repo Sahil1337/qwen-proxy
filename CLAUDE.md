@@ -72,8 +72,7 @@ working — don't add one unless something genuinely needs it.
 - **The proxy is a dumb, stateless endpoint.** Retrieval, embeddings, memory and
   state never run there. Keep it general — meetAI prompts, fixtures, transcripts
   and schemas do not belong under `apps/proxy/`.
-- **`apps/proxy/` was its own repository** before this one was renamed around
-  it, and people still depend on it directly. It keeps its own `AGENTS.md`, its
-  MIT `LICENSE` and its own house style — single quotes, 120 columns, NodeNext
-  `.js` specifiers. Follow those inside that directory, and the root style
-  outside it.
+- **`apps/proxy/` keeps its own conventions.** It is independently usable and
+  separately licensed, so it has its own `AGENTS.md`, its MIT `LICENSE` and its
+  own house style — single quotes, 120 columns, NodeNext `.js` specifiers.
+  Follow those inside that directory, and the root style outside it.

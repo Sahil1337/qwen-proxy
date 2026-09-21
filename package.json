@@ -7,10 +7,11 @@
     "evals/*"
   ],
   "scripts": {
-    "dev:proxy": "bun run --filter qwen-proxy dev",
     "dev:api": "bun run --filter @meetai/api dev",
+    "dev:proxy": "bun run --filter qwen-proxy dev",
     "dev:web": "bun run --filter @meetai/web dev",
     "eval": "bun run --filter @meetai/evals-propositions eval",
+    "eval:retrieval": "bun run --filter @meetai/evals-retrieval eval",
     "typecheck": "bun run --filter '*' typecheck"
   },
   "packageManager": "bun@1.1.38",

@@ -12,12 +12,20 @@ hydrates using the ids you return.
 
 ```
 src/
-  embedder.ts   HttpEmbedder: client for the embedding service (runs on the Mac, not the GPU laptop)
-  indexer.ts    PropositionIndexer: claim text → vector + keyword index, keyed by proposition id
-  searcher.ts   HybridSearcher: structured-vs-semantic routing, BM25 + vector, RRF fusion
+  vectors.ts           cosine/dot/norm/normalize — pure, provider-free
+  store.ts             JsonVectorStore: the index, as a JSON file. Stores vectors, does no embedding
+  embedders/gemini.ts  GeminiEmbedder: works today, so the eval can run today
+  embedder.ts          HttpEmbedder: the local embedding service. Still a stub
+  indexer.ts           PropositionIndexer: claim text → vector, keyed by proposition id
+  searcher.ts          VectorSearcher: query → ranked proposition ids
 ```
 
-All stubs.
+Working: the store, the Gemini embedder, indexing and vector search, measured by
+`evals/retrieval`. Stubbed: `HttpEmbedder` (the self-hosted service), and the
+keyword half of search.
+
+`VectorSearcher` is named for what it does. It becomes hybrid when BM25 + RRF
+land and the eval says they earn it; `SearchHit.via` already carries the path.
 
 ## Contracts
 
@@ -35,17 +43,20 @@ All stubs.
 
 ## First tasks
 
-1. Stand up the embedding service (with unit 1) and `HttpEmbedder` against
-   it. Pick one model, store its name on every vector, never mix.
-2. An in-process index (array + cosine, plus a trivial BM25) behind
-   `PropositionIndexer` / `HybridSearcher`, so `POST /projects/:id/ask` works
-   end to end before pgvector exists.
-3. A retrieval eval: 20 questions over the kickoff transcript's propositions
-   with the expected proposition ids, so "hybrid beats vector-only" and any
-   future reranker are measured, not asserted. This is the eval set the
-   kickoff said must exist before the reranker question is reopened.
-4. Then pgvector (or whatever unit 3 chose), swapping the index behind the
-   same interfaces.
+1. Run `bun run eval:retrieval` and record the baseline. Every change below is
+   judged against it.
+2. Tune `EVAL_MIN_SCORE`. It is the knob that decides between "the corpus
+   cannot answer that" and a confident wrong answer; the out-of-domain queries
+   in the golden set exist to price it.
+3. Add BM25 and fuse with RRF (reading list B3), then structured-vs-semantic
+   routing. Keep both behind `Searcher` and show the eval improving.
+4. Stand up the embedding service (with unit 1) and implement `HttpEmbedder`
+   against it, replacing Gemini. Same interface, so only the container changes
+   — but re-index: vectors from two models are not comparable.
+5. Then pgvector (or whatever unit 3 chose), swapping the index behind the same
+   interfaces.
+
+Reranking stays deferred until step 1 gives a number to beat.
 
 ## Prior findings (Sep 2026, Gemini `gemini-embedding-001`, removed scratch scripts)
 

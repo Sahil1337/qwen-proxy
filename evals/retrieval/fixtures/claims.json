@@ -1,0 +1,81 @@
+[
+  {
+    "fixture": "MeetIQ kickoff — chunk 1/7",
+    "propositions": [
+      { "confidence": 0.95, "speaker": "Sahil", "text": "The prototype will not include transcription or diarization - input is already speaker-labelled and timestamped (speaker name, timestamp, transcript text)", "type": "decision" },
+      { "confidence": 0.9, "speaker": "Yash", "text": "Transcript text must be converted into claims/propositions before embedding, with one fact per proposition", "type": "decision" },
+      { "confidence": 0.85, "speaker": "Yash", "text": "Each proposition should have all context filled in so it makes sense independently (e.g., 'Yash is responsible for the claim schema' or 'the claim schema is due Friday')", "type": "requirement" }
+    ]
+  },
+  {
+    "fixture": "MeetIQ kickoff — chunk 2/7",
+    "propositions": [
+      { "confidence": 0.95, "speaker": "Sahil", "text": "For the prototype: claim index only, transcript through pointers (store meeting ID and line range in proposition, fetch from Postgres when needed), meeting index deferred.", "type": "decision" },
+      { "confidence": 0.9, "speaker": "Rishita", "text": "UI should show answer first, then 'source' with expandable transcript lines underneath generated claims to demonstrate provenance during demos.", "type": "commitment" },
+      { "confidence": 0.85, "speaker": "Sahil", "text": "Meeting index deferred until next semester; no exact date promised due to existing work priorities.", "type": "status" },
+      { "confidence": 0.9, "speaker": "Tejasva", "text": "Embedding model research: bge-small (384 dimensions) is easier to run; gte-base and nomic (~768 dimensions) do slightly better on retrieval benchmarks but may slow the pipeline.", "type": "requirement" },
+      { "confidence": 0.9, "speaker": "Yash", "text": "Extraction accuracy is the biggest failure point in the pipeline - if LLM changes one word, vector database stores something that wasn't actually said.", "type": "risk" }
+    ]
+  },
+  {
+    "fixture": "MeetIQ kickoff — chunk 3/7",
+    "propositions": [
+      { "confidence": 0.95, "speaker": "Sahil", "text": "Embedding model cannot run on Nitro due to GPU memory constraints (4GB 3050, LLM already uses most of the memory)", "type": "constraint" },
+      { "confidence": 0.9, "speaker": "Sahil", "text": "Use local embedding provider instead of OpenAI endpoint to maintain self-hosted nature for demo/guide review", "type": "decision" },
+      { "confidence": 0.85, "speaker": "Yash", "text": "Keep embedding provider behind an interface for model flexibility", "type": "decision" },
+      { "confidence": 0.9, "speaker": "Sahil", "text": "Embeddings will run on a separate machine (prototype: Sahil's Mac; demo: same approach)", "type": "constraint" },
+      { "confidence": 0.9, "speaker": "Sahil", "text": "Frontend should show processing status (processing, completed, failed) because extraction takes too long to be synchronous", "type": "decision" },
+      { "confidence": 0.85, "speaker": "Sahil", "text": "Nitro provides approximately 20 tokens/second with tools enabled, meaning a one-hour meeting requires ~15 minutes of GPU time", "type": "constraint" },
+      { "confidence": 0.9, "speaker": "Sahil", "text": "Implement background job for extraction instead of synchronous processing", "type": "action_item" }
+    ]
+  },
+  {
+    "fixture": "MeetIQ kickoff — chunk 4/7",
+    "propositions": [
+      { "confidence": 0.95, "speaker": "Sahil", "text": "The prototype will use 60-second chunks for extraction; can change later if extraction quality is bad.", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Yash", "text": "A small context header (meeting name, participants, discussion before chunk) will be sent to the extraction model but NOT embedded in vectors.", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Tejasva", "text": "Retrieval uses two-tier approach: SQL for structured questions (who owns payment API?, what's due Friday?) and vector search for open-ended semantic questions (why did we choose Postgres?).", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Tejasva", "text": "A small LLM classification call will decide whether a query is structured or semantic.", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Yash", "text": "The semantic side uses hybrid search: BM25 plus vector search with combined rankings.", "type": "decision" },
+      { "confidence": 0.85, "speaker": "Yash", "text": "A reranker is deferred and will not be built immediately.", "type": "decision" },
+      { "confidence": 0.9, "speaker": "Sahil", "text": "Sahil will handle the API contract part for the job status endpoint.", "type": "commitment" },
+      { "confidence": 0.95, "speaker": "Yash", "text": "Embedding should represent the claim/proposition text, not meeting metadata; otherwise vectors become similar for the wrong reason.", "type": "rationale" }
+    ]
+  },
+  {
+    "fixture": "MeetIQ kickoff — chunk 5/7",
+    "propositions": [
+      { "confidence": 0.95, "speaker": "Sahil", "text": "Hybrid search approach with reranker explicitly deferred until golden evaluation set exists", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Tejasva", "text": "Postgres with pgvector chosen over Qdrant/Chroma to keep claims and vectors in same database, avoiding sync issues between separate systems", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Sahil", "text": "React/Vite/TypeScript frontend + Node/Express backend stack with Tailwind CSS", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Sahil", "text": "Python service for embedding model with HTTP endpoint only (not splitting entire backend)", "type": "decision" },
+      { "confidence": 0.95, "speaker": "Sahil", "text": "pgvector validated at prototype scale only; will revisit if scaling beyond few thousand to ten thousand claims", "type": "commitment" },
+      { "confidence": 0.95, "speaker": "Tejasva", "text": "Claims have owner, meeting, timestamp, type, validity fields (not just vectors)", "type": "requirement" },
+      { "confidence": 0.95, "speaker": "Sahil", "text": "Golden evaluation set required before reranker can be properly evaluated", "type": "dependency" }
+    ]
+  },
+  {
+    "fixture": "MeetIQ kickoff — chunk 6/7",
+    "propositions": [
+      { "confidence": 0.95, "speaker": "Sahil", "text": "Sahil owns ingestion, transcript parsing, chunking, queue, Nitro hosting, and deployment", "type": "ownership" },
+      { "confidence": 0.95, "speaker": "Yash", "text": "Yash owns extraction, prompt, proposition schema, tool calling, and testing model outputs", "type": "ownership" },
+      { "confidence": 0.95, "speaker": "Tejasva", "text": "Tejasva owns database and retrieval (schema, pgvector, hybrid search, query routing)", "type": "ownership" },
+      { "confidence": 0.95, "speaker": "Prakrati", "text": "Prakrati owns upload and meeting pages (meeting list, transcript view, processing state)", "type": "ownership" },
+      { "confidence": 0.95, "speaker": "Rishita", "text": "Rishita owns Q&A side and citations", "type": "ownership" },
+      { "confidence": 0.95, "speaker": "Yash", "text": "Yash will send the final claim schema field list by Friday, 2026-09-11", "type": "commitment" },
+      { "confidence": 0.9, "speaker": "Sahil", "text": "Frontend should use fake JSON until backend API is ready; do not call model proxy directly from frontend", "type": "decision" },
+      { "confidence": 0.95, "speaker": null, "text": "Claim schema must be finalized before database table can be finalized", "type": "dependency" },
+      { "confidence": 0.9, "speaker": null, "text": "Backend API must exist before frontend can properly connect; currently using fake JSON in the meantime", "type": "dependency" },
+      { "confidence": 0.95, "speaker": null, "text": "Missing evaluation set - no test data to prove retrieval or reranker improvements", "type": "blocker" },
+      { "confidence": 0.8, "speaker": null, "text": "Internal review is scheduled for late October (exact date not determined)", "type": "deadline" },
+      { "confidence": 0.9, "speaker": "Sahil", "text": "Evaluation set will be discussed on Thursday's agenda to assign ownership", "type": "action_item" }
+    ]
+  },
+  {
+    "fixture": "MeetIQ kickoff — chunk 7/7",
+    "propositions": [
+      { "confidence": 0.95, "speaker": "Yash", "text": "Yash will send the schema fields by Friday.", "type": "commitment" },
+      { "confidence": 0.95, "speaker": "Sahil", "text": "The review should demonstrate end-to-end flow: transcript input → proposition output → question asked → answer returned with source line.", "type": "requirement" }
+    ]
+  }
+]

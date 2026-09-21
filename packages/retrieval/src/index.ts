@@ -5,5 +5,16 @@
  */
 
 export { HttpEmbedder } from "./embedder.ts";
+export { GeminiEmbedder, type GeminiEmbedderOptions } from "./embedders/gemini.ts";
 export { PropositionIndexer } from "./indexer.ts";
-export { HybridSearcher } from "./searcher.ts";
+export { VectorSearcher, type VectorSearcherOptions } from "./searcher.ts";
+export {
+  idFor,
+  JsonVectorStore,
+  type Metadata,
+  type SearchOptions,
+  type StoredRecord,
+  type StoreFile,
+  type StoreHit,
+} from "./store.ts";
+export { cosine, dot, norm, normalize, type Vector } from "./vectors.ts";
