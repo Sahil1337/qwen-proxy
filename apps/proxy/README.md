@@ -267,6 +267,20 @@ await qwen.health();
 
 Errors are thrown as `QwenProxyError` with `status`, `code` (the proxy's error code such as `tool_call_invalid` or `queue_timeout`), `details`, and `retryAfterSeconds` when the proxy sent `Retry-After`. See [`examples/08-client.ts`](examples/08-client.ts).
 
+### Against another OpenAI-compatible host
+
+`baseUrl` does not have to be this proxy. Give it the host minus the `/v1` the client appends — `https://api.groq.com/openai`, `https://openrouter.ai/api`, `https://api.openai.com` — plus the provider's key and a `model` it recognises, and `chat()`, `stream()`, `extract()` and the tool loops work unchanged:
+
+```ts
+const groq = new QwenProxyClient({
+  baseUrl: 'https://api.groq.com/openai',
+  apiKey: process.env.GROQ_API_KEY,
+  model: 'llama-3.3-70b-versatile',
+});
+```
+
+Two things to expect. `route()`, `inspect()` and `health()` are proxy endpoints and 404 elsewhere. And `meetiq` is a proxy extension nobody else sends, so the client fills it in with `router.rule: 'upstream'` and zeroed timings rather than leaving it undefined — check that field before reading a completion's routing or speed numbers as real. Missing `usage` is zeroed the same way.
+
 ## Examples
 
 Runnable versions of everything below live in [`examples/`](examples/README.md).

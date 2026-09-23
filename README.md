@@ -74,11 +74,15 @@ transcript → windows → extraction (LLM + tools) → propositions
                              └── retrieval → evidence-cited answers
 ```
 
-Extraction runs against a **self-hosted Qwen3.5-4B on a laptop GPU** — an RTX
-3050 with 4 GB of VRAM — rather than a hosted API, so the whole system runs end
-to end with no API keys and no external dependency. That constraint shapes
-everything: small context windows, JSON-schema constrained output, and tool
-calls instead of one giant prompt.
+Extraction was built against a **self-hosted Qwen3.5-4B on a laptop GPU** — an
+RTX 3050 with 4 GB of VRAM. That constraint shapes everything: small context
+windows, JSON-schema constrained output, and tool calls instead of one giant
+prompt.
+
+Nothing downstream depends on the model being local, though. `apps/proxy` speaks
+the OpenAI chat-completions shape, so `PROXY_BASE_URL` can just as well be Groq,
+OpenRouter or OpenAI — the same client, the same code path, no GPU and no Ollama
+install. See [`apps/api/.env.example`](apps/api/.env.example).
 
 ## Running it
 
@@ -87,12 +91,26 @@ Requires [Bun](https://bun.sh). There is no build step.
 ```bash
 bun install          # one lockfile covers every workspace
 bun run typecheck    # every package, in parallel
+bun run test:cloud   # check the configured LLM host answers
 bun run dev:proxy    # the proxy — run this on the machine with the GPU
-bun run eval         # extraction quality against a live proxy
+bun run eval         # extraction quality against a live LLM host
 ```
 
-`bun run eval` needs a reachable proxy. Point it at your own with
-`PROXY_BASE_URL=http://your-host:8000 bun run eval`.
+Both `test:cloud` and `eval` need a reachable LLM host, set with
+`PROXY_BASE_URL`, `PROXY_API_KEY` and `PROXY_MODEL`. To go straight to a hosted
+provider and skip `dev:proxy` entirely:
+
+```bash
+PROXY_BASE_URL=https://api.groq.com/openai \
+PROXY_API_KEY=gsk_... \
+PROXY_MODEL=llama-3.3-70b-versatile \
+bun run test:cloud
+```
+
+`PROXY_BASE_URL` is the host **without** the `/v1` — the client appends it.
+Worked examples of the client SDK against a provider, and a list of what
+behaves differently off the proxy, are in
+[`scripts/examples/`](scripts/examples/README.md).
 
 ## Layout
 
@@ -103,6 +121,7 @@ apps/web        frontend: React, talks to the API over HTTP
 packages/core   shared contracts — the domain model, as zod schemas
 packages/*      one package per area: ingestion, ai, memory, retrieval
 evals/          extraction quality suites
+scripts/        diagnostics and client-SDK examples against a hosted provider
 docs/           product spec, architecture, audit, work split
 ```
 

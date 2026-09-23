@@ -24,6 +24,7 @@ export function loadEvalEnv(runtimeEnv: Record<string, string | undefined> = pro
       /** The proxy to evaluate against. Point this at your own; run `bun run dev:proxy` for a local one. */
       PROXY_BASE_URL: z.url().default("http://127.0.0.1:8000"),
       PROXY_API_KEY: z.string().min(1).optional(),
+      PROXY_MODEL: z.string().min(1).default("qwen3.5:4b"),
 
       /** A transcript file; defaults to the kickoff fixture next to this package. */
       EVAL_TRANSCRIPT: z.string().min(1).optional(),

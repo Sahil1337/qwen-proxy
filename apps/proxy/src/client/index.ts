@@ -48,17 +48,51 @@ export class QwenProxyError extends Error {
 
 /** All optional, and `undefined` is accepted so `process.env.X` can be passed straight through. */
 export interface ClientOptions {
-  /** Default: http://127.0.0.1:8000 */
+  /**
+   * The host to call, minus the `/v1`. The proxy, or any other
+   * OpenAI-compatible endpoint: `https://api.groq.com/openai`,
+   * `https://openrouter.ai/api`, `https://api.openai.com`.
+   * Default: http://127.0.0.1:8000
+   */
   baseUrl?: string | undefined;
-  /** Sent as `Authorization: Bearer` when the proxy has API_KEY set. */
+  /** Sent as `Authorization: Bearer` when the proxy has API_KEY set, or always against a hosted provider. */
   apiKey?: string | undefined;
-  /** Model id echoed in requests; the proxy serves one model regardless. Default: qwen3.5:4b */
+  /**
+   * Model id sent with every request. The proxy serves one model and ignores
+   * it; a hosted provider needs the real name. Default: qwen3.5:4b
+   */
   model?: string | undefined;
   /** Per-request timeout. Default: 10 minutes, matching the proxy's upstream timeout. */
   timeoutMs?: number | undefined;
   /** Sent as `x-request-id` when provided; useful for correlating with proxy logs. */
   requestId?: (() => string) | undefined;
 }
+
+/**
+ * `meetiq` is this proxy's own extension and `usage` is optional on streamed
+ * chunks, so neither is guaranteed when `baseUrl` points at another
+ * OpenAI-compatible endpoint (Groq, OpenRouter, OpenAI itself). Both are filled
+ * in with these rather than left undefined, so callers can read
+ * `completion.usage` and `completion.meetiq` without branching on the host.
+ * `router.rule` is `'upstream'` to mark a completion the proxy did not produce.
+ */
+const EMPTY_USAGE: Usage = {
+  prompt_tokens: 0,
+  completion_tokens: 0,
+  total_tokens: 0,
+  completion_tokens_details: { reasoning_tokens: 0 },
+};
+
+const UPSTREAM_META: ProxyMeta = {
+  router: { mode: 'fast', rule: 'upstream' },
+  mode_requested: null,
+  mode_used: 'fast',
+  tool_parse: 'native',
+  retries: 0,
+  upstream_calls: 1,
+  upstream_ms: 0,
+  timing: { load_ms: 0, prompt_eval_ms: 0, eval_ms: 0, eval_tps: 0 },
+};
 
 export class QwenProxyClient {
   private readonly baseUrl: string;
@@ -77,7 +111,8 @@ export class QwenProxyClient {
 
   async chat(request: ChatRequest, signal?: AbortSignal): Promise<ChatCompletion> {
     const res = await this.send('/v1/chat/completions', { model: this.model, ...request, stream: false }, signal);
-    return (await res.json()) as ChatCompletion;
+    const completion = (await res.json()) as ChatCompletion;
+    return { ...completion, usage: completion.usage ?? EMPTY_USAGE, meetiq: completion.meetiq ?? UPSTREAM_META };
   }
 
   /** Streaming chat completion; yields each SSE chunk until `[DONE]`. */
@@ -199,8 +234,8 @@ export class QwenProxyClient {
       if (chunk.meetiq) meetiq = chunk.meetiq;
     }
 
-    if (!usage || !meetiq) {
-      throw new QwenProxyError(502, 'incomplete_stream', 'Stream ended without usage/meetiq on the final chunk');
+    if (!id && !content && !tool_calls) {
+      throw new QwenProxyError(502, 'incomplete_stream', 'Stream ended without any content or tool calls');
     }
 
     return {
@@ -221,8 +256,8 @@ export class QwenProxyClient {
           logprobs: null,
         },
       ],
-      usage,
-      meetiq,
+      usage: usage ?? EMPTY_USAGE,
+      meetiq: meetiq ?? UPSTREAM_META,
     };
   }
 
