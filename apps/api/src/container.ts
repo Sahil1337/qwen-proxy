@@ -50,7 +50,11 @@ export type Container = {
 
 export function createContainer(): Container {
   const config = loadConfig();
-  const proxy = new QwenProxyClient({ baseUrl: config.proxyBaseUrl, apiKey: config.proxyApiKey });
+  const proxy = new QwenProxyClient({
+    baseUrl: config.proxyBaseUrl,
+    apiKey: config.proxyApiKey,
+    model: config.proxyModel,
+  });
   // Model name and dimensions are retrieval's decision; placeholders until unit 4 picks one.
   const embedder = new HttpEmbedder(config.embedderBaseUrl, "unchosen", 768);
   // A JSON file is the index until the database question is settled. Swapping

@@ -23,6 +23,8 @@ packages/        things that get imported — never run standalone
   tsconfig/      the base tsconfig everything else extends
 evals/           eval suites — not deployed, not imported
   propositions/  extraction quality: fixtures, checks, manual verdict loop
+scripts/         diagnostics and client-SDK examples against a hosted LLM
+                 provider — not deployed, not imported
 docs/            product spec, architecture, audit, work split, reading list
 ```
 
@@ -36,6 +38,7 @@ task.
 bun install          # one lockfile at the root covers every workspace
 bun run typecheck    # every package, in parallel — must stay clean
 bun run eval         # proposition extraction evals against a live proxy
+bun run test:cloud   # check the configured LLM host answers
 bun run dev:api      # the backend
 bun run dev:proxy    # the proxy, on the machine with the GPU
 ```

@@ -1,0 +1,18 @@
+{
+  "name": "@meetai/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Diagnostic scripts and client-SDK examples against a hosted LLM provider. Not deployed, not imported.",
+  "scripts": {
+    "test:cloud": "bun test-cloud.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "qwen-proxy": "workspace:*"
+  },
+  "devDependencies": {
+    "@meetai/tsconfig": "workspace:*",
+    "typescript": "^5"
+  }
+}

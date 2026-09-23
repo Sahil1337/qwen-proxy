@@ -149,6 +149,17 @@
       "name": "@meetai/tsconfig",
       "version": "0.0.0",
     },
+    "scripts": {
+      "name": "@meetai/scripts",
+      "version": "0.0.0",
+      "dependencies": {
+        "qwen-proxy": "workspace:*",
+      },
+      "devDependencies": {
+        "@meetai/tsconfig": "workspace:*",
+        "typescript": "^5",
+      },
+    },
   },
   "packages": {
     "@meetai/ai": ["@meetai/ai@workspace:packages/ai"],
@@ -166,6 +177,8 @@
     "@meetai/memory": ["@meetai/memory@workspace:packages/memory"],
 
     "@meetai/retrieval": ["@meetai/retrieval@workspace:packages/retrieval"],
+
+    "@meetai/scripts": ["@meetai/scripts@workspace:scripts"],
 
     "@meetai/tsconfig": ["@meetai/tsconfig@workspace:packages/tsconfig"],
 

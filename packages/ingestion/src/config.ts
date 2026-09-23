@@ -22,9 +22,14 @@ import { z } from "zod";
 export type Config = {
   /** Where the API listens. */
   port: number;
-  /** qwen-proxy, e.g. http://nitro.lan:8000. */
+  /**
+   * Any OpenAI-compatible host, minus the `/v1` the client appends: qwen-proxy
+   * at http://nitro.lan:8000, or a hosted provider at https://api.groq.com/openai.
+   */
   proxyBaseUrl: string;
   proxyApiKey: string | undefined;
+  /** Model name sent with every request; qwen-proxy ignores it, a provider does not. */
+  proxyModel: string;
   /** The embedding service (runs on the Mac in the prototype, not on the GPU laptop). */
   embedderBaseUrl: string;
   /** Extraction window target in seconds; see windows.ts. */
@@ -40,6 +45,8 @@ function readEnv(runtimeEnv: Record<string, string | undefined>) {
       /** Required: there is no sensible default for someone else's machine. */
       PROXY_BASE_URL: z.url(),
       PROXY_API_KEY: z.string().min(1).optional(),
+      /** Required for the same reason as the URL: it depends on who is serving. */
+      PROXY_MODEL: z.string().min(1),
       EMBEDDER_BASE_URL: z.url(),
       WINDOW_SECONDS: z.coerce.number().int().positive().default(150),
       INDEX_PATH: z.string().min(1).default("data/index.json"),
@@ -56,6 +63,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     port: e.PORT,
     proxyBaseUrl: e.PROXY_BASE_URL,
     proxyApiKey: e.PROXY_API_KEY,
+    proxyModel: e.PROXY_MODEL,
     embedderBaseUrl: e.EMBEDDER_BASE_URL,
     windowSeconds: e.WINDOW_SECONDS,
     indexPath: e.INDEX_PATH,

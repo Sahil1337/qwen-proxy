@@ -25,8 +25,13 @@ const fixtures = fixturesFromTranscript(basename(transcriptPath, ".txt"), readFi
 });
 
 await runEvaluation({
-  client: new QwenProxyClient({ baseUrl: env.PROXY_BASE_URL, apiKey: env.PROXY_API_KEY, timeoutMs: 180_000 }),
-  label: env.PROXY_BASE_URL,
+  client: new QwenProxyClient({
+    baseUrl: env.PROXY_BASE_URL,
+    apiKey: env.PROXY_API_KEY,
+    model: env.PROXY_MODEL,
+    timeoutMs: 180_000,
+  }),
+  label: `${env.PROXY_BASE_URL} (${env.PROXY_MODEL})`,
   fixtures,
   systemPrompt: EXTRACTION_PROMPT,
   mode: env.EVAL_MODE,
